@@ -4,7 +4,21 @@
         <base href="/">
         <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
         <style type="text/css">
-
+        #top {
+            min-height:60px;
+            background: #989898;
+        }
+        #top h1 {
+            line-height:60px;
+            margin:0 0 0 20px;
+            font-size:200%;
+            text-shadow: #fff 1px 1px 1px;
+        }
+        .startbutton input {
+            height: 50px;
+            margin:10px;
+            min-width: 120px;
+        }
         </style>
     </head>
     <body>
@@ -19,15 +33,22 @@
         </div>
 
         <template id="statusbar">
-            <div class="pure-g">
-                <div class="pure-u-1-2">overburdened</div>
-                <div class="pure-u-1-2"><input type="button" v-bind:value="timeleft" :disabled="is_running" v-on:click="run()" /> 
-                    <input type="button" v-if="!ack_end && time == 0" value="End" v-on:click="confirm_end()" /></div>
+            <div class="pure-g" id="top">
+                <div class="pure-u-1-2">
+                    <h1>overburdened</h1>
+                </div>
+                <div class="pure-u-1-2">
+                    <div class="startbutton">
+                        <input type="button" v-bind:value="timeleft" :disabled="is_running" v-on:click="run()" /> 
+                    <input type="button" v-if="!ack_end && time == 0" value="End (goes in notices)" v-on:click="confirm_end()" />
+                    </div>
+                </div>
             </div>
         </template>
         <template id="charmenu">
             <div class="pure-u-1-4" id="part-char">
                 <h1>dux level {{ player.level }}</h1>
+                <h2>Exp: {{ player.exp.toFixed(0) }}/{{ required_exp()[1] }}</h2>
                 <h2>Capacity: 51/190</h2>
                 <h2>Gold: {{ player.gold.toFixed(0) }}</h2>
             </div>
@@ -42,6 +63,7 @@
         <template id="inventory">
             <div class="pure-u-1-2" id="part-inv">
                 <h1>inventory</h1>
+                <p v-for="i in items_list">{{ i.name }}, {{ i.qty }}</p>
             </div>
         </template>
 
@@ -55,22 +77,46 @@
             var DB = localforage;
             var HASH = 'd5fde2d59b7bdada04dec44875d89636';
             var rand_between = (min, max) => Math.random() * (max - min) + min;
+            var random_item = (items, num) => {
+                /*
+                 So get the unique weights, and lean towards the lower weights
+                 Get a random number, and make the pool out of ones with rarity <= that number
+                 for [1,10], rand(1,11) will bias towards the lower
+                 then out of the possible options, pick an actual random one (_.sample)
+                */
+                var u = _.uniq(_.pluck(items, 'rarity'));
+                var s = u.reduce((acc,val) => acc + val);
+                var r = rand_between(1, 1+s).toFixed(0);
+                var f = _.filter(items, i => i.rarity <= r);
+
+                console.log('u', r, f, _.sample(f, 1));
+                return _.sample(f, 1)[0];
+            };
+
+            const TickerMessages = [
+                'Townsfolk wondering where the surplus Short Swords are coming from',
+                'Local police considering sealing off cave near town, wary of ghosts'
+            ];
+
             const store = new Vuex.Store({
                 state: {
                     selected: 0,
                     items: [],
+                    levels: [],
                     inv: [],
                     player: {
                         level: 1,
                         name: '',
                         gold: 0,
+                        exp: 0,
                     },
 
                     time: {
                         running: false,
                         time: 0, // milliseconds
                         timer: null,
-                    }
+                    },
+                    messages: [],
                 },
                 actions: {
                     reset(context) {
@@ -81,6 +127,9 @@
                     items (state, items) {
                         state.items = items;
                     },
+                    levels (state, levels) {
+                        state.levels = levels;
+                    },
                     add_to_inventory(state, itemid) {
                         let item = _.findWhere(state.items, {'id': itemid});
                         //console.log('item', item);
@@ -89,6 +138,15 @@
                     add_gold(state, amount) {
                         state.player.gold += amount;
                     },
+                    add_exp(state, exp) {
+                        state.player.exp += exp;
+                    },
+                    save(state) {
+                        // store state.player, inv in DB
+                    },
+                    message(state, message) {
+                        state.messages.push(message);
+                    }
                     
                 },
                 getters: {
@@ -98,10 +156,28 @@
                     inventory: state => state.inv,
                     running: state => state.time.running,
                     time: state => state.time.time,
-                    random_item: state => {
-                        return _.sample(state.items);
-                    },
+                    items: state => state.items,
                     player: state => state.player,
+                    levels: state => state.levels,
+                    messages: state => state.messages,
+                    next_level: state => {
+                        var self = this;
+                        var nlevel = [0,0];
+                        _.each(state.levels, (ele, idx, l) => {
+                            if (state.player.exp >= ele.exp) {
+                                //console.log('above', state.player.exp, ele.exp)
+                                //console.log('current level:', ele.id)
+                                let n = l[idx + 1];
+                                if (n === undefined) {
+                                    nlevel = ['max', 0];
+                                } else {
+                                    nlevel = [n.id, n.exp];
+                                }
+                                //console.log('next level', nlevel);
+                            }
+                        });
+                        return nlevel;
+                    }
 
                     // serialized filters
                 }
@@ -114,7 +190,11 @@
                     timer: null,
                     time: 0,
                     ack_end: true, // acknowledged end
-                    
+                    last_run: {
+                        gold: 0,
+                        exp: 0,
+                        items: [],
+                    }
                 }),
                 computed: {
                     is_running() {
@@ -126,13 +206,13 @@
                         if (this.running == true || this.ack_end != true) {
                             return (Math.round(s * 100) / 100).toFixed(2);
                         } else {
-                            return 'Run';
+                            return 'Enter Dungeon ›';
                         }
                     },                
                 },
                 methods: {
                     run() {
-                        console.log('run dungeon');
+                        //console.log('run dungeon');
                         let min = this.$store.getters.difficulty;
                         let max = min * 1.5;
 
@@ -140,17 +220,17 @@
                         this.time = runtime;
                         // Set timer, occasionally during the timer, give random item(s) and gold
                         this.running = true;
-                        var speed = 50;
+                        var speed = 10;
                         var self = this;
                         if (!this.timer) {
-                            console.log('start timer');
+                            //console.log('start timer');
                             this.ack_end = false;
                             self.timer = setInterval(() => {
                                 //console.log('timer', self.time / 1000)
                                 if (self.time > 0) {
                                     self.time = Math.max(0, self.time - speed);
                                 } else {
-                                    console.log('times up!');
+                                    //console.log('times up!');
                                     self.end_run();
                                     clearInterval(self.timer);
                                     self.time = 0;
@@ -164,29 +244,47 @@
                         console.log('ended run, heres some loot');
 
                         // Give random item, gold
-                        console.log('diffy', this.$store.getters.difficulty)
                         let diff = this.$store.getters.difficulty;
                         let gold = rand_between(diff, diff * 1.1);
                         this.$store.commit('add_gold', gold);
-                        console.log('gold!', gold);
+                        //console.log('gold!', gold);
 
                         // Gain exp
+                        var expgain = rand_between(6 * diff, 10*diff);
+                        this.$store.commit('add_exp', expgain);
 
                         let rng = rand_between(1,100);
 
                         // chance for item
+                        var newitems = [];
                         if (diff > rng||true) {
                             // got an item!
-                            let ritem = this.$store.getters.random_item;
-                            console.log('You got an item!', ritem.name);
+                            let ritem = random_item(this.$store.getters.items, 1);
+                            //let ritem = _.sample(this.$store.getters.items);
+                            newitems.push(ritem[0]);
+                            //console.log('You got an item!', ritem.name);
                             this.$store.commit('add_to_inventory', ritem.id);
                         }
+
+                        console.log('gained ', gold.toFixed(0), ' gold and ', expgain.toFixed(0), ' exp!')
+                        this.last_run = {
+                            'gold': gold,
+                            'exp': expgain,
+                            'items': newitems
+                        };
+
+                        this.$store.commit('save');
+                        this.$parent.message('Game Saved');
 
                     },
                     confirm_end() {
                         this.ack_end = true;
+                        this.last_run = {'gold': 0, 'exp': 0, 'items': []};
                     },
                 }
+            });
+            const Notices = Vue.component('notices', {
+                template: '#notices',
             });
             const Charmenu = Vue.component('charmenu', {
                 template: '#charmenu',
@@ -196,11 +294,46 @@
                     },
                     inv() {
                         return this.$store.getters.inventory;
+                    },
+                },
+                methods: {
+                    required_exp() {
+                        return this.$store.getters.next_level;
+                        /*
+                        let levs = this.$store.getters.levels;
+                        let next = _.find(levs, x => {console.log('x',x.exp, this.player.exp, x.exp < this.player.exp);});
+                        console.log('next',next)
+                        return next.exp;*/
                     }
+
                 }
             });
             const Inventory = Vue.component('inventory', {
                 template: '#inventory',
+                methods: {
+                    items() {
+                        return this.$store.getters.inventory;
+                    }
+                },
+                computed: {
+                    items_list() {
+                        let items = this.$store.getters.inventory;
+                        //let keys = items[0]
+                        let inv = {};
+                        _.each(items, (i, idx) => {
+                            var o = i;
+                            if (i.id in inv) {
+                                // update quantity
+                                inv[i.id].qty += 1;
+                            } else {
+                                o.qty = 1;
+                                inv[i.id] = o;
+                            }
+                        });
+                        // add sorts, filters
+                        return inv;
+                    }
+                }
             });
             const Actionmenu = Vue.component('actionmenu', {
                 template: '#actionmenu',
@@ -232,26 +365,40 @@
                         // Check cache from indexeddb
                         DB.getItem('cachestats.hash').then((value) => {
                             //console.log('hash value', value);
-                            if (value === null || value != HASH) {
+                            // DEV: always get fresh
+                            if (true || value === null || value != HASH) {
                                 console.log('Incorrect cache, load new')
                                 // Load and put into IDB
-                                fetch('/data/items.json').then((resp) => resp.json())
+                                fetch('/data/items.json').then(resp => resp.json())
                                 .then((data) => {
                                     console.log('d', data)
                                     DB.setItem('items', data);
                                     let hashval = md5(JSON.stringify(data));
                                     DB.setItem('cachestats.hash', hashval);
                                     console.log('Updated cachestats.hash to', hashval);
-                                })
+                                });
+
+                                // Load user data
+                                fetch('/data/levels.json').then(resp => resp.json())
+                                .then(data => {
+                                    DB.setItem('levels', data);
+                                });
                             } // maybe race condition?
 
                             // Load from idb
                             DB.getItem('items').then((resp) => {
-                                console.log('Items from IDB', resp);
+                                //console.log('Items from IDB', resp);
                                 this.$store.commit('items', resp);
+                            });
+                            DB.getItem('levels').then(resp => {
+                                this.$store.commit('levels', resp);
                             });
                         });
                     },
+                    message(msg) {
+                        console.log('called message() with msg=', msg);
+                        this.$store.commit('message', {'msg': msg});
+                    }
                 }
             });
 
