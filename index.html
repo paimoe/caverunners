@@ -1,0 +1,260 @@
+<html>
+    <head>
+        <meta charset="UTF-8"> 
+        <base href="/">
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <style type="text/css">
+
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <statusbar></statusbar>
+
+            <div class="pure-g">
+                <charmenu></charmenu>
+                <inventory></inventory>
+                <actionmenu></actionmenu>
+            </div>
+        </div>
+
+        <template id="statusbar">
+            <div class="pure-g">
+                <div class="pure-u-1-2">overburdened</div>
+                <div class="pure-u-1-2"><input type="button" v-bind:value="timeleft" :disabled="is_running" v-on:click="run()" /> 
+                    <input type="button" v-if="!ack_end && time == 0" value="End" v-on:click="confirm_end()" /></div>
+            </div>
+        </template>
+        <template id="charmenu">
+            <div class="pure-u-1-4" id="part-char">
+                <h1>dux level {{ player.level }}</h1>
+                <h2>Capacity: 51/190</h2>
+                <h2>Gold: {{ player.gold.toFixed(0) }}</h2>
+            </div>
+        </template>
+        <template id="actionmenu">
+            <div class="pure-u-1-4" id="part-actions">
+                <h1>actions</h1>
+                <h2>Shop</h2>
+                <h2>Upgrades (2 available)</h2>
+            </div>
+        </template>
+        <template id="inventory">
+            <div class="pure-u-1-2" id="part-inv">
+                <h1>inventory</h1>
+            </div>
+        </template>
+
+        <script src="/node_modules/vue/dist/vue.min.js"></script>
+        <script src="node_modules/vuex/dist/vuex.min.js"></script>
+        <script src="/node_modules/vue-router/dist/vue-router.min.js"></script>
+        <script src="/node_modules/localforage/dist/localforage.min.js"></script>
+        <script src="/node_modules/blueimp-md5/js/md5.min.js"></script>
+        <script src="/node_modules/underscore/underscore-min.js"></script>
+        <script>
+            var DB = localforage;
+            var HASH = 'd5fde2d59b7bdada04dec44875d89636';
+            var rand_between = (min, max) => Math.random() * (max - min) + min;
+            const store = new Vuex.Store({
+                state: {
+                    selected: 0,
+                    items: [],
+                    inv: [],
+                    player: {
+                        level: 1,
+                        name: '',
+                        gold: 0,
+                    },
+
+                    time: {
+                        running: false,
+                        time: 0, // milliseconds
+                        timer: null,
+                    }
+                },
+                actions: {
+                    reset(context) {
+                        context.commit('reset');
+                    }
+                },
+                mutations: {
+                    items (state, items) {
+                        state.items = items;
+                    },
+                    add_to_inventory(state, itemid) {
+                        let item = _.findWhere(state.items, {'id': itemid});
+                        //console.log('item', item);
+                        state.inv.push(item);
+                    },
+                    add_gold(state, amount) {
+                        state.player.gold += amount;
+                    },
+                    
+                },
+                getters: {
+                    difficulty: state => {
+                        return state.player.level;
+                    },
+                    inventory: state => state.inv,
+                    running: state => state.time.running,
+                    time: state => state.time.time,
+                    random_item: state => {
+                        return _.sample(state.items);
+                    },
+                    player: state => state.player,
+
+                    // serialized filters
+                }
+            });
+
+            const Statusbar = Vue.component('statusbar', {
+                template: '#statusbar',
+                data: () => ({
+                    running: false,
+                    timer: null,
+                    time: 0,
+                    ack_end: true, // acknowledged end
+                    
+                }),
+                computed: {
+                    is_running() {
+                        //console.log('time', this.time, this.time>0)
+                        return this.time > 0 || this.ack_end == false;
+                    },
+                    timeleft() {
+                        let s = this.time / 1000;
+                        if (this.running == true || this.ack_end != true) {
+                            return (Math.round(s * 100) / 100).toFixed(2);
+                        } else {
+                            return 'Run';
+                        }
+                    },                
+                },
+                methods: {
+                    run() {
+                        console.log('run dungeon');
+                        let min = this.$store.getters.difficulty;
+                        let max = min * 1.5;
+
+                        let runtime = rand_between(min, max) * 1000;
+                        this.time = runtime;
+                        // Set timer, occasionally during the timer, give random item(s) and gold
+                        this.running = true;
+                        var speed = 50;
+                        var self = this;
+                        if (!this.timer) {
+                            console.log('start timer');
+                            this.ack_end = false;
+                            self.timer = setInterval(() => {
+                                //console.log('timer', self.time / 1000)
+                                if (self.time > 0) {
+                                    self.time = Math.max(0, self.time - speed);
+                                } else {
+                                    console.log('times up!');
+                                    self.end_run();
+                                    clearInterval(self.timer);
+                                    self.time = 0;
+                                    self.timer = null;
+                                    self.running = false;
+                                }
+                            }, speed);
+                        }
+                    },
+                    end_run() {
+                        console.log('ended run, heres some loot');
+
+                        // Give random item, gold
+                        console.log('diffy', this.$store.getters.difficulty)
+                        let diff = this.$store.getters.difficulty;
+                        let gold = rand_between(diff, diff * 1.1);
+                        this.$store.commit('add_gold', gold);
+                        console.log('gold!', gold);
+
+                        // Gain exp
+
+                        let rng = rand_between(1,100);
+
+                        // chance for item
+                        if (diff > rng||true) {
+                            // got an item!
+                            let ritem = this.$store.getters.random_item;
+                            console.log('You got an item!', ritem.name);
+                            this.$store.commit('add_to_inventory', ritem.id);
+                        }
+
+                    },
+                    confirm_end() {
+                        this.ack_end = true;
+                    },
+                }
+            });
+            const Charmenu = Vue.component('charmenu', {
+                template: '#charmenu',
+                computed: {
+                    player() {
+                        return this.$store.getters.player;
+                    },
+                    inv() {
+                        return this.$store.getters.inventory;
+                    }
+                }
+            });
+            const Inventory = Vue.component('inventory', {
+                template: '#inventory',
+            });
+            const Actionmenu = Vue.component('actionmenu', {
+                template: '#actionmenu',
+            });
+            const routes = [
+                { path: '/', component: Inventory, name: 'inventory' },
+                { path: '/store', component: Inventory, name: 'store' }
+            ];
+
+            const router = new VueRouter({
+               // mode: 'history',
+                routes
+            });
+            var app = new Vue({
+                el: '#container',
+                store,
+                router,
+                data: {
+                    
+                },
+                created() {
+                    this.init()
+                },
+                methods: {
+                    init() {
+                        console.log('init');
+
+                        // Load data, store in idb
+                        // Check cache from indexeddb
+                        DB.getItem('cachestats.hash').then((value) => {
+                            //console.log('hash value', value);
+                            if (value === null || value != HASH) {
+                                console.log('Incorrect cache, load new')
+                                // Load and put into IDB
+                                fetch('/data/items.json').then((resp) => resp.json())
+                                .then((data) => {
+                                    console.log('d', data)
+                                    DB.setItem('items', data);
+                                    let hashval = md5(JSON.stringify(data));
+                                    DB.setItem('cachestats.hash', hashval);
+                                    console.log('Updated cachestats.hash to', hashval);
+                                })
+                            } // maybe race condition?
+
+                            // Load from idb
+                            DB.getItem('items').then((resp) => {
+                                console.log('Items from IDB', resp);
+                                this.$store.commit('items', resp);
+                            });
+                        });
+                    },
+                }
+            });
+
+        </script>
+    </body>
+</html>

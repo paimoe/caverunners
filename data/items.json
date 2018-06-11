@@ -1,0 +1,23 @@
+[
+	{
+		"id": 1,
+		"name": "Small Axe",
+		"rarity": 1,
+		"value": 10,
+		"size": 5
+	},
+	{
+		"id": 2,
+		"name": "Short Sword",
+		"rarity": 1,
+		"value": 10,
+		"size": 5
+	},
+	{
+		"id": 3,
+		"name": "Rubber Ducky",
+		"rarity": 10,
+		"value": 30,
+		"size": 2
+	}
+]
