@@ -19,11 +19,29 @@
             margin:10px;
             min-width: 120px;
         }
+        em {
+            font-style:normal;
+        }
+        em.gold {
+            color: gold;
+        }
+        #noticebar {
+            background: lightblue;
+            box-shadow: inset 0 0 10px blue;
+        }
+        #noticebar p{
+            margin:10px;
+        }
+        span.penalty {
+            color: red;
+            font-size:60%;
+        }
         </style>
     </head>
     <body>
         <div id="container">
             <statusbar></statusbar>
+            <notices></notices>
 
             <div class="pure-g">
                 <charmenu></charmenu>
@@ -40,29 +58,42 @@
                 <div class="pure-u-1-2">
                     <div class="startbutton">
                         <input type="button" v-bind:value="timeleft" :disabled="is_running" v-on:click="run()" /> 
-                    <input type="button" v-if="!ack_end && time == 0" value="End (goes in notices)" v-on:click="confirm_end()" />
                     </div>
                 </div>
+            </div>
+        </template>
+        <template id="notices">
+            <div v-if="show()" class="pure-u-1" id="noticebar">
+                <p>Your run took {{ run.time.toFixed(2) }}s!</p>
+                <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em> gold.</p>
+                <p v-if="run.items.length > 0">You also found the following items:</p>
+                <ul v-if="run.items.length > 0"><li v-if="run.items.length > 0" v-for="i in run.items">{{ i.name }}</li></ul>
+                <input type="button" value="OK" v-on:click="confirm_end()" />
             </div>
         </template>
         <template id="charmenu">
             <div class="pure-u-1-4" id="part-char">
                 <h1>dux level {{ player.level }}</h1>
-                <h2>Exp: {{ player.exp.toFixed(0) }}/{{ required_exp()[1] }}</h2>
-                <h2>Capacity: 51/190</h2>
-                <h2>Gold: {{ player.gold.toFixed(0) }}</h2>
+                <h2>Exp: {{ player.exp.toFixed(0) }}/{{ required_exp().exp }}</h2>
+                <h2>Capacity: {{ weight }}/{{ player.capacity }} <span class="penalty" v-if="penalty">+{{ penalty }}%</span></h2>
+                <h2>Gold: <em class="gold">{{ player.gold.toFixed(0) }}</em></h2>
             </div>
         </template>
         <template id="actionmenu">
             <div class="pure-u-1-4" id="part-actions">
-                <h1>actions</h1>
                 <h2>Shop</h2>
-                <h2>Upgrades (2 available)</h2>
+                <h2>Upgrades</h2>
+                <div v-for="(u, name) in upgrades" v-bind:class="{'owned': owned(name)}">
+                    <h4>{{ u.nice_name }} <span v-if="owned(name)">[owned]</span></h4>
+                    <p v-if="!owned(name)">{{ u.description }}</p>
+                    <p v-if="!owned(name)"><input type="button" class="buybutton" v-bind:value="buytext(u)" v-on:click="purchase(u)" :disabled="owned(name) || toomuch(u)" /></p>
+                </div>
             </div>
         </template>
         <template id="inventory">
             <div class="pure-u-1-2" id="part-inv">
                 <h1>inventory</h1>
+                <!-- if no upgrade for grouped, dont show qty column -->
                 <p v-for="i in items_list">{{ i.name }}, {{ i.qty }}</p>
             </div>
         </template>
@@ -74,6 +105,17 @@
         <script src="/node_modules/blueimp-md5/js/md5.min.js"></script>
         <script src="/node_modules/underscore/underscore-min.js"></script>
         <script>
+            const MAX_LEVEL = 10;
+            const INV_BASE = 60;
+            const FORMULA = {
+                time: diff => {
+                    return diff * 2;
+                },
+            };
+            const BASES = {
+                INV_SIZE: 60,
+                MF: 10, // magic find
+            };
             var DB = localforage;
             var HASH = 'd5fde2d59b7bdada04dec44875d89636';
             var rand_between = (min, max) => Math.random() * (max - min) + min;
@@ -88,9 +130,10 @@
                 var s = u.reduce((acc,val) => acc + val);
                 var r = rand_between(1, 1+s).toFixed(0);
                 var f = _.filter(items, i => i.rarity <= r);
-
-                console.log('u', r, f, _.sample(f, 1));
-                return _.sample(f, 1)[0];
+                // this is fucked, since i can't pick double junk etc, it'll just do one of each
+                // so redo at some point
+                //console.log('u',  r, f, _.sample(f, num), num);
+                return _.sample(f,num);
             };
 
             const TickerMessages = [
@@ -109,6 +152,8 @@
                         name: '',
                         gold: 0,
                         exp: 0,
+                        capacity: BASES.INV_SIZE,
+                        upgrades: [],
                     },
 
                     time: {
@@ -117,10 +162,17 @@
                         timer: null,
                     },
                     messages: [],
+                    upgrades: {},
+                    run: {
+                        running: false,
+                        ended: false,
+                        ack_end: true,
+                        result: {}
+                    }
                 },
                 actions: {
-                    reset(context) {
-                        context.commit('reset');
+                    check_achievements() {
+
                     }
                 },
                 mutations: {
@@ -130,38 +182,85 @@
                     levels (state, levels) {
                         state.levels = levels;
                     },
-                    add_to_inventory(state, itemid) {
-                        let item = _.findWhere(state.items, {'id': itemid});
-                        //console.log('item', item);
-                        state.inv.push(item);
+                    upgrades (state, upgrades) {
+                        state.upgrades = upgrades;
+                    },
+                    add_to_inventory(state, items) {
+                        //let item = _.findWhere(state.items, {'id': itemid});
+                        console.log('item', items);
+                        state.inv = state.inv.concat(items);
                     },
                     add_gold(state, amount) {
+                        // amount can also be negative
                         state.player.gold += amount;
                     },
+                    add_upgrade(state, upname) {
+                        state.player.upgrades.push(upname);
+                    },
                     add_exp(state, exp) {
+
+                        var nlevel = this.getters.next_level;
+                        if (nlevel.exp <= state.player.exp + exp && nlevel !== false) {
+                            // we levelled up
+                            console.log('levelled up!', nlevel.capacity);
+                            state.player.level += 1;
+                            state.player.capacity = INV_BASE + nlevel.capacity;
+                        }
+
                         state.player.exp += exp;
+                        // did we level up?
+                        //console.log('lev', nlevel, state.player.level, state.player.exp)
                     },
                     save(state) {
                         // store state.player, inv in DB
                     },
                     message(state, message) {
                         state.messages.push(message);
+                    },
+                    run(state, full) {
+                        state.run = full;
+                    },
+                    run_end(state) {
+                        state.run.ack_end = true;
+                        state.run.running = false;
                     }
                     
                 },
                 getters: {
                     difficulty: state => {
-                        return state.player.level;
+                        var basetime = 0;
+                        _.each(state.levels, (ele, idx, l) => {
+                            if (state.player.exp >= ele.exp) {
+                                nlevel = ele;
+                                basetime = nlevel.basetime;
+                            }
+                        });
+                        let invweight = _.reduce(_.pluck(state.inv, 'size'), (acc, val) => acc + val, 0);
+                        let mul = Math.max(1, invweight / state.player.capacity); // add overage as multiplier
+                        console.log('multiplier', mul);
+                        return (state.player.level + basetime) * mul;
                     },
                     inventory: state => state.inv,
                     running: state => state.time.running,
                     time: state => state.time.time,
+                    run_time: state => {
+                        // Base time for runs, affected by upgrades
+                    },
                     items: state => state.items,
                     player: state => state.player,
                     levels: state => state.levels,
                     messages: state => state.messages,
+                    level: state => {
+                        // Get current level info
+                        var nlevel = [0,0];
+                        _.each(state.levels, (ele, idx, l) => {
+                            if (state.player.exp >= ele.exp) {
+                                nlevel = ele;
+                            }
+                        });
+                        return nlevel;
+                    },
                     next_level: state => {
-                        var self = this;
                         var nlevel = [0,0];
                         _.each(state.levels, (ele, idx, l) => {
                             if (state.player.exp >= ele.exp) {
@@ -169,17 +268,44 @@
                                 //console.log('current level:', ele.id)
                                 let n = l[idx + 1];
                                 if (n === undefined) {
-                                    nlevel = ['max', 0];
+                                    nlevel = false;
                                 } else {
-                                    nlevel = [n.id, n.exp];
+                                    nlevel = n;
                                 }
                                 //console.log('next level', nlevel);
                             }
                         });
                         return nlevel;
-                    }
+                    },
+                    weight: state => {
+                        // sum the inventory
+                        let s = _.reduce(_.pluck(state.inv, 'size'), (acc, val) => acc + val, 0);
+                        return s;
+                    },
+                    capacity: state => {
+                        // add in upgrades too
+                        return state.player.capacity;
+                    },
+                    penalty: state => {
+                        let w = _.reduce(_.pluck(state.inv, 'size'), (acc, val) => acc + val, 0);
+                        let pl = state.player.capacity
+                        let pc = w / pl * 100 - 100;
+                        if (pc > 0) {
+                            return pc.toFixed(1);
+                        } 
+                        return 0;
+                    },
 
-                    // serialized filters
+                    // Upgrades
+                    upgrades: state => {
+                        return state.upgrades
+                    },
+                    has_upgrade: state => upgrade => {
+                        return state.player.upgrades.includes(upgrade);
+                    },
+
+                    // Latest run
+                    run: state => state.run
                 }
             });
 
@@ -189,6 +315,8 @@
                     running: false,
                     timer: null,
                     time: 0,
+                    time_start: 0,
+                    time_take: 0,
                     ack_end: true, // acknowledged end
                     last_run: {
                         gold: 0,
@@ -199,11 +327,13 @@
                 computed: {
                     is_running() {
                         //console.log('time', this.time, this.time>0)
-                        return this.time > 0 || this.ack_end == false;
+                        let run = this.$store.getters.run;
+                        return this.time > 0;// || run.ack_end == false;
                     },
                     timeleft() {
                         let s = this.time / 1000;
-                        if (this.running == true || this.ack_end != true) {
+                        let run = this.$store.getters.run;
+                        if (this.running == true/* || run.ack_end != true*/) {
                             return (Math.round(s * 100) / 100).toFixed(2);
                         } else {
                             return 'Enter Dungeon ›';
@@ -213,78 +343,119 @@
                 methods: {
                     run() {
                         //console.log('run dungeon');
-                        let min = this.$store.getters.difficulty;
-                        let max = min * 1.5;
+                        let diff = this.$store.getters.difficulty;
+                        let diff_range = 0.1;
+                        let min = diff * (1 - diff_range);
+                        let max = diff * (1 + diff_range);
+                        //console.log('min',min,max)
 
                         let runtime = rand_between(min, max) * 1000;
                         this.time = runtime;
-                        // Set timer, occasionally during the timer, give random item(s) and gold
                         this.running = true;
-                        var speed = 10;
-                        var self = this;
+                        this.time_start = Date.now();
+                        this.time_take = runtime;
+
                         if (!this.timer) {
                             //console.log('start timer');
                             this.ack_end = false;
-                            self.timer = setInterval(() => {
-                                //console.log('timer', self.time / 1000)
-                                if (self.time > 0) {
-                                    self.time = Math.max(0, self.time - speed);
-                                } else {
-                                    //console.log('times up!');
-                                    self.end_run();
-                                    clearInterval(self.timer);
-                                    self.time = 0;
-                                    self.timer = null;
-                                    self.running = false;
-                                }
-                            }, speed);
+
+                            this.timer = requestAnimationFrame(this.update_run);
+                        }
+                    },
+                    update_run() {
+                        var timeleft = this.time_start + this.time_take - Date.now();
+                        //console.log('timeleft', timeleft);
+                        if (timeleft > 0) {
+                            //this.time = Math.max(0, this.time - speed);
+                            this.time = Math.max(0, timeleft);
+                            requestAnimationFrame(this.update_run);
+                        } else {
+                            //console.log('times up!');
+                            cancelAnimationFrame(this.timer);
+                            this.end_run();
+                            this.timer = null;
+                            this.running = false;
+                            this.time = this.time_start = this.time_take = 0;
                         }
                     },
                     end_run() {
-                        console.log('ended run, heres some loot');
+                        //console.log('ended run, heres some loot');
 
                         // Give random item, gold
+                        const GOLD_FACTOR = 0.1;
                         let diff = this.$store.getters.difficulty;
-                        let gold = rand_between(diff, diff * 1.1);
+                        let gold = rand_between(diff, diff * 0.5);
                         this.$store.commit('add_gold', gold);
                         //console.log('gold!', gold);
 
                         // Gain exp
-                        var expgain = rand_between(6 * diff, 10*diff);
+                        var expgain = rand_between(0.5*diff, diff);
                         this.$store.commit('add_exp', expgain);
 
                         let rng = rand_between(1,100);
+                        // Check upgrades for item find
 
                         // chance for item
                         var newitems = [];
-                        if (diff > rng||true) {
+                        //console.log('RNG', rng);
+                        let itemchance = BASES.MF;
+                        itemchance = 101;
+                        if (rng < itemchance) {
                             // got an item!
-                            let ritem = random_item(this.$store.getters.items, 1);
+                            let numnewitems = Math.floor(rand_between(1,3));
+                            let ritem = random_item(this.$store.getters.items, 60);
                             //let ritem = _.sample(this.$store.getters.items);
-                            newitems.push(ritem[0]);
+                            newitems = newitems.concat(ritem);
                             //console.log('You got an item!', ritem.name);
-                            this.$store.commit('add_to_inventory', ritem.id);
+                            this.$store.commit('add_to_inventory', newitems);
                         }
 
                         console.log('gained ', gold.toFixed(0), ' gold and ', expgain.toFixed(0), ' exp!')
-                        this.last_run = {
-                            'gold': gold,
-                            'exp': expgain,
-                            'items': newitems
-                        };
+                        this.$store.commit('run', {
+                            running: this.running,
+                            ack_end: this.ack_end,
+                            ended: true,
+                            result: {
+                                'gold': gold,
+                                'exp': expgain,
+                                'items': newitems,
+                                'time': this.time_take/1000, // only used for display atm
+                            }
+                        })
 
                         this.$store.commit('save');
                         this.$parent.message('Game Saved');
 
                     },
-                    confirm_end() {
-                        this.ack_end = true;
-                        this.last_run = {'gold': 0, 'exp': 0, 'items': []};
-                    },
                 }
             });
             const Notices = Vue.component('notices', {
                 template: '#notices',
+                data: () => {
+                    lastrun: {}
+                },
+                methods: {
+                    show() {
+                        let run = this.$store.getters.run;
+                        if (run.ended === true && run.ack_end === false) {
+                            return true;
+                        }
+                        return false;
+                    },
+                    confirm_end() {
+                        this.ack_end = true;
+                        this.last_run = 'etc';
+                        this.$store.commit('run_end');
+                    }
+                },
+                computed: {
+                    run() {
+                        // Get latest run
+                        let run = this.$store.getters.run.result;
+                        return run;
+
+                    }
+                }
             });
             const Charmenu = Vue.component('charmenu', {
                 template: '#charmenu',
@@ -295,15 +466,16 @@
                     inv() {
                         return this.$store.getters.inventory;
                     },
+                    weight() {
+                        return this.$store.getters.weight;
+                    },
+                    penalty() {
+                        return this.$store.getters.penalty;
+                    }
                 },
                 methods: {
                     required_exp() {
                         return this.$store.getters.next_level;
-                        /*
-                        let levs = this.$store.getters.levels;
-                        let next = _.find(levs, x => {console.log('x',x.exp, this.player.exp, x.exp < this.player.exp);});
-                        console.log('next',next)
-                        return next.exp;*/
                     }
 
                 }
@@ -318,6 +490,12 @@
                 computed: {
                     items_list() {
                         let items = this.$store.getters.inventory;
+
+                        // If we don't have the upgrade, just return raw list
+                        if (!this.$store.getters.has_upgrade('inv_group')) {
+                            return items;
+                        }
+
                         //let keys = items[0]
                         let inv = {};
                         _.each(items, (i, idx) => {
@@ -337,6 +515,33 @@
             });
             const Actionmenu = Vue.component('actionmenu', {
                 template: '#actionmenu',
+                computed: {
+                    upgrades() {
+                        return this.$store.getters.upgrades;
+                    }
+                },
+                methods: {
+                    owned(name) {
+                        return this.$store.getters.has_upgrade(name);
+                    },
+                    toomuch(up) {
+                        return this.$store.getters.player.gold < up.cost;
+                    },
+                    buytext(up) {
+                        let s = 'Buy for ' + up.cost + 'g';
+                        return this.owned(up.name) ? 'Owned' : s;
+                    },
+                    purchase(up) {
+                        let pl = this.$store.getters.player;
+                        if (pl.gold >= up.cost) {
+                            this.$store.commit('add_gold', -up.cost);
+                            this.$store.commit('add_upgrade', up.name);
+                        } else {
+                            // can't afford it bruh
+                            this.$parent.message('Cannot afford this upgrade');
+                        }
+                    }
+                }
             });
             const routes = [
                 { path: '/', component: Inventory, name: 'inventory' },
@@ -347,6 +552,7 @@
                // mode: 'history',
                 routes
             });
+            // can we just make this.player a reference to this.$store.getters.player or whatevs
             var app = new Vue({
                 el: '#container',
                 store,
@@ -358,6 +564,23 @@
                     this.init()
                 },
                 methods: {
+                    fetch_json(fname, callback) {
+                        let f = fetch('/data/' + fname + '.json').then(resp => resp.json());
+                        if (callback === undefined) {
+                            f.then(data => {
+                                DB.setItem(fname, data);
+                            });
+                        } else {
+                            f.then(callback);
+                        }
+                        return f; // in case we want it
+                    },
+                    fetch_from_idb(itemname) {
+                        DB.getItem(itemname).then((resp) => {
+                            //console.log('Items from IDB', itemname, resp);
+                            this.$store.commit(itemname, resp);
+                        });
+                    },
                     init() {
                         console.log('init');
 
@@ -369,9 +592,8 @@
                             if (true || value === null || value != HASH) {
                                 console.log('Incorrect cache, load new')
                                 // Load and put into IDB
-                                fetch('/data/items.json').then(resp => resp.json())
-                                .then((data) => {
-                                    console.log('d', data)
+                                this.fetch_json('items', (data) => {
+                                    //console.log('d', data)
                                     DB.setItem('items', data);
                                     let hashval = md5(JSON.stringify(data));
                                     DB.setItem('cachestats.hash', hashval);
@@ -379,25 +601,35 @@
                                 });
 
                                 // Load user data
-                                fetch('/data/levels.json').then(resp => resp.json())
-                                .then(data => {
-                                    DB.setItem('levels', data);
+                                this.fetch_json('levels');
+                                this.fetch_json('upgrades', data => {
+                                    // Convert it
+                                    data = _.indexBy(data, 'name');
+                                    DB.setItem('upgrades', data);
                                 });
                             } // maybe race condition?
 
                             // Load from idb
-                            DB.getItem('items').then((resp) => {
-                                //console.log('Items from IDB', resp);
-                                this.$store.commit('items', resp);
-                            });
-                            DB.getItem('levels').then(resp => {
-                                this.$store.commit('levels', resp);
-                            });
+                            this.fetch_from_idb('items');
+                            this.fetch_from_idb('levels');
+                            this.fetch_from_idb('upgrades');
                         });
                     },
                     message(msg) {
-                        console.log('called message() with msg=', msg);
+                        //console.log('called message() with msg=', msg);
                         this.$store.commit('message', {'msg': msg});
+                    },
+                    CHEATER() {
+                        var self = this;
+                        return {
+                            add_upgrade: function(name)  {
+                                self.$store.state.player.upgrades.push(name);
+                            },
+                            add_gold(amount) {
+                                self.$store.state.player.gold += amount;
+                            }
+                        }
+
                     }
                 }
             });
