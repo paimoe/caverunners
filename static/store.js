@@ -194,6 +194,16 @@ const store = new Vuex.Store({
             } 
             return 0;
         },
+        max_penalty: (state, getters) => {
+            let ups = getters.upgrades(true, 'maxpenalty');
+            let pen_inc = sum_field(ups, 'hvalue');
+            return BASES.HARD_LIMIT + pen_inc;
+        },
+        over_hard_limit: (state, getters) => {
+            let pen = getters.penalty;
+            //nsole.log('ov hard', pen, BASES.HARD_LIMIT)//
+            return pen > getters.max_penalty;
+        },
 
         // Upgrades
         upgrades: state => (playeronly, type) => {

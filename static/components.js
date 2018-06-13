@@ -25,9 +25,15 @@ const Statusbar = Vue.component('statusbar', {
             if (this.running == true/* || run.ack_end != true*/) {
                 return (Math.round(s * 100) / 100).toFixed(2);
             } else {
+                if (this.$store.getters.over_hard_limit) {
+                    return 'You are carrying too much! Sell some of your items.';
+                }
                 return 'Enter Dungeon ›';
             }
-        },                
+        },  
+        over_hard_limit() {
+            return this.$store.getters.over_hard_limit;
+        },
     },
     methods: {
         run() {
@@ -179,6 +185,7 @@ const Charmenu = Vue.component('charmenu', {
                 increased_speed: 100 - 100 * this.$store.getters.increased_speed, // convert to %
                 gold_find: this.$store.getters.gold_find,
                 magic_find: this.$store.getters.magic_find,
+                max_penalty: this.$store.getters.max_penalty,
             }
         }
     },
@@ -225,6 +232,9 @@ const Inventory = Vue.component('inventory', {
         totalvalue() {
             let inv = this.$store.getters.inventory;
             return _.reduce(inv, (acc, val) => acc + val.value, 0);
+        },
+        totalitems() {
+            return this.$store.getters.inventory.length;
         }
     },
     computed: {
