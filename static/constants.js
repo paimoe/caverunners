@@ -36,6 +36,9 @@ var random_item = (items, num) => {
     //console.log('u',  r, f, _.sample(f, num), num);
     return _.sample(f,num);
 };
+function sum_field(collection, field) {
+    return _.reduce(_.pluck(collection, field), (acc, val) => acc + val, 0);
+}
 
 const TickerMessages = [
 'Townsfolk wondering where the surplus Short Swords are coming from',

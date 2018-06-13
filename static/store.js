@@ -215,6 +215,12 @@ const store = new Vuex.Store({
         has_upgrade: state => upgrade => {
             return state.player.upgrades.includes(upgrade);
         },
+        increased_speed: (state, getters) => {
+            let speed = 0;
+            let ups = getters.upgrades(true, 'speed');
+            let pc_inc = sum_field(ups, 'hvalue');
+            return (100 - pc_inc) / 100;
+        },
 
         // Latest run
         run: state => state.run,
