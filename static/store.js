@@ -221,6 +221,13 @@ const store = new Vuex.Store({
             let pc_inc = sum_field(ups, 'hvalue');
             return (100 - pc_inc) / 100;
         },
+        // Available via upgrades
+        gold_find: state => {
+            return 0;
+        },
+        magic_find: state => {
+            return BASES.MF;
+        },
 
         // Latest run
         run: state => state.run,

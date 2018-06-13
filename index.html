@@ -157,7 +157,8 @@
         <template id="charmenu">
             <div class="pure-u-1-6" id="part-char">
                 <div class="charbox">
-                    <h1>dux &#x272a; {{ player.level }}</h1>
+                    <h1 v-if="player.name">{{ player.name }} &#x272a; {{ player.level }}</h1>
+                    <h1 v-if="!player.name" v-on:click="set_name()">[Click to set name]</h1>
                     <div class="pure-g">
                         <div class="pure-u-1-2">Experience</div>
                         <div class="pure-u-1-2">{{ player.exp.toFixed(0) }}/{{ required_exp() }}</div>
@@ -169,6 +170,21 @@
                     <div class="pure-g">
                         <div class="pure-u-1-2">Gold</div>
                         <div class="pure-u-1-2"><em class="gold">{{ player.gold.toFixed(0) }}</em></div>
+                    </div>
+                </div>
+                <div class="charbox">
+                    <h1>Stats</h1>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Faster Run Speed</div>
+                        <div class="pure-u-1-4">+{{ stats.increased_speed }}%</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Gold Find</div>
+                        <div class="pure-u-1-4">+{{ stats.gold_find }}%</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Item Find Chance</div>
+                        <div class="pure-u-1-4">{{ stats.magic_find }}%</div>
                     </div>
                 </div>
 

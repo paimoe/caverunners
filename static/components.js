@@ -172,6 +172,14 @@ const Charmenu = Vue.component('charmenu', {
         },
         capacity() {
             return this.$store.getters.capacity;
+        },
+        stats() {
+            // compute stats
+            return {
+                increased_speed: 100 - 100 * this.$store.getters.increased_speed, // convert to %
+                gold_find: this.$store.getters.gold_find,
+                magic_find: this.$store.getters.magic_find,
+            }
         }
     },
     methods: {
@@ -179,6 +187,11 @@ const Charmenu = Vue.component('charmenu', {
             let nlevel = this.$store.getters.next_level;
 
             return nlevel === undefined ? 0 : nlevel.exp;
+        },
+        set_name() {
+            let name = prompt('What is your name?');
+            this.$store.state.player.name = name;
+            this.$store.commit('save');
         }
 
     }
