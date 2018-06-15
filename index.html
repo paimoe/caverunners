@@ -126,6 +126,34 @@
             border-radius:10px;
             border:2px solid #7e1717;
         }
+        .achievementdisplay {
+            background: #4A2E17;
+            border: 3px solid gold;
+            box-shadow: inset 0 0 10px gold;
+        }
+        .achievementdisplay h2 {
+            color: gold;
+            font-size:130%;
+            margin:10px 0;
+        }
+        .achievementdisplay h3 {
+            color:#fff;
+            margin:10px 0;
+        }
+        .achievementdisplay p {
+            color:#fff;
+        }
+        .achievementdisplay .achclose {
+            color:#fff;
+            font-size:200%;
+            text-align:right;
+        }
+        .achievementdisplay .achclose span {
+            margin-right:5px;
+        }
+        .achievementdisplay .achimg  {
+            display:flex;justify-content:center;align-items:center;
+        }
         </style>
     </head>
     <body>
@@ -197,6 +225,10 @@
                         <div class="pure-u-3-4">Max Penalty</div>
                         <div class="pure-u-1-4">{{ stats.max_penalty }}%</div>
                     </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Achievements</div>
+                        <div class="pure-u-1-4">{{ stats.achievement_count }}</div>
+                    </div>
                 </div>
 
                 <div class="credits">
@@ -223,6 +255,15 @@
         </template>
         <template id="inventory">
             <div class="pure-u-1-2" id="part-inv">
+                <div class="achievementdisplay pure-g" v-for="ach in new_achievements">
+                    <div class="pure-u-1-8 achimg"><img src="http://via.placeholder.com/96x96" /></div>
+                    <div class="pure-u-3-4">
+                        <h2>Achievement Unlocked!</h2>
+                        <h3>&rarr; {{ ach.nice_name }}</h3>
+                        <p>{{ ach.description }}</p>
+                    </div>
+                    <div class="pure-u-1-8 achclose"><span>&#x2A2F;</span></div>
+                </div>
                 <div class="nicetable">
                     <h1>Inventory</h1>
                     <!-- Inv total -->
@@ -239,6 +280,7 @@
                             <td>Name</td>
                             <td v-if="has_upgrade('inv_group')">Quantity</td>
                             <td>Value</td>
+                            <td v-if="has_upgrade('inv_weight')">Weight</td>
                             <td>Type</td>
                             <td>Sell</td>
                         </tr>
@@ -248,6 +290,7 @@
                             <td>{{ i.name }}</td>
                             <td v-if="has_upgrade('inv_group')">{{ i.qty }}</td>
                             <td>{{ i.value }}</td>
+                            <td v-if="has_upgrade('inv_weight')">{{ i.size }}</td>
                             <td>{{ i.type }}</td>
                             <td><a v-on:click="sell(i)">Sell</a></td>
                         </tr>
@@ -333,12 +376,14 @@
                                     data = _.indexBy(data, 'name');
                                     DB.setItem('upgrades', data);
                                 });
+                                this.fetch_json('achievements');
                             } // maybe race condition?
 
                             // Load from idb
                             this.fetch_from_idb('items');
                             this.fetch_from_idb('levels');
                             this.fetch_from_idb('upgrades');
+                            this.fetch_from_idb('achievements');
 
                             DB.getItem('save').then(resp => {
                                 console.log('SAVE', resp);

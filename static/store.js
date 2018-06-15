@@ -6,6 +6,7 @@ const store = new Vuex.Store({
         items: [],
         levels: [],
         inv: [],
+        achievements: [],
         player: {
             level: 1,
             name: '',
@@ -13,6 +14,7 @@ const store = new Vuex.Store({
             exp: 0,
             capacity: BASES.INV_SIZE,
             upgrades: [],
+            achieved: [],
         },
 
         time: {
@@ -39,11 +41,61 @@ const store = new Vuex.Store({
 
             },
             gold: { earned: 0 }
+        },
+        tmp: {
+            achievements: [], // newly unlocked
+            run: []
         }
     },
     actions: {
-        check_achievements() {
+        check_achievements(ctx) {
+            let achs = ctx.getters.achs;
+            // Loop all achievements, that we haven't achieved
+            let open = _.reject(achs, a => _.contains(ctx.state.player.achieved, a.name));
+            var satisfied = false;
+            for (let ach of open) {
+                if ('own' in ach.exec) {
+                    satisfied = false; // set it to false in each clause, because one up above may have succeeded
+                    var true_list = [];
+                    // own these specific items
+                    _.each(ach.exec.own, n => {
+                        var items_count = ctx.getters.inv_item(n[0]).length;
+                        if (items_count >= n[1]) {
+                            // success
+                            console.log('YES!', items_count)
+                            true_list.push(true);
+                        } else {
+                            true_list.push(false);
+                        }
+                    });
 
+                    satisfied = _.every(true_list, x => x === true);
+                }
+                if ('own_type' in ach.exec) {
+                    satisfied = false;
+                    // own these item types
+                    var true_list = [];
+                    _.each(ach.exec.own, n => {
+                        //n = [type, qty]
+                        var items_count = ctx.getters.inv_type(n[0]).length; // todo: just get inv at the top, once? then filter that list
+                        if (items_count >= n[1]) {
+                            true_list.push(true);
+                        } else {
+                            true_list.push(false);
+                        }
+                    });
+
+                    satisfied = _.every(true_list, x => x === true);
+                }
+
+                if (satisfied) {
+                    // achieved all applicable conditions
+                    // add this to the players achieved
+                    ctx.commit('add_achievement', ach);
+                    ctx.commit('save');
+                    ctx.commit('message', 'Achievement Unlocked!');
+                }
+            }
         }
     },
     mutations: {
@@ -55,6 +107,16 @@ const store = new Vuex.Store({
         },
         upgrades (state, upgrades) {
             state.upgrades = upgrades;
+        },
+        achievements(state, achs) {
+            state.achievements = _.map(achs, a => {
+                a.exec = JSON.parse(a.exec);
+                return a;
+            });
+        },
+        add_achievement(state, ach) {
+            state.player.achieved.push(ach.name);
+            state.tmp.achievements.push(ach);
         },
         add_to_inventory(state, items) {
             //let item = _.findWhere(state.items, {'id': itemid});
@@ -149,6 +211,12 @@ const store = new Vuex.Store({
             return (state.player.level + basetime) * mul;
         },
         inventory: state => state.inv,
+        inv_item: (state, g) => id => {
+            return _.filter(g.inventory, i => i.id == id);
+        },
+        inv_type: (state, g) => type => {
+            return _.filter(g.inventory, i => i.type == type);
+        },
         running: state => state.time.running,
         time: state => state.time.time,
         run_time: state => {
@@ -248,6 +316,13 @@ const store = new Vuex.Store({
 
             }
         },
+
+        // Cheebos
+        achs: state => _.sortBy(state.achievements, a => a.name),
+        new_achievements: state => state.tmp.achievements,
+
+        // non game related
+
     }
 });
 

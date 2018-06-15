@@ -116,7 +116,9 @@ const Statusbar = Vue.component('statusbar', {
                     'items': newitems,
                     'time': this.time_take/1000, // only used for display atm
                 }
-            })
+            });
+
+            this.$store.dispatch('check_achievements');
 
             this.$store.commit('save');
             this.$parent.message('Game Saved');
@@ -186,6 +188,7 @@ const Charmenu = Vue.component('charmenu', {
                 gold_find: this.$store.getters.gold_find,
                 magic_find: this.$store.getters.magic_find,
                 max_penalty: this.$store.getters.max_penalty,
+                achievement_count: this.$store.getters.player.achieved.length,
             }
         }
     },
@@ -224,6 +227,7 @@ const Inventory = Vue.component('inventory', {
                 // Add gold
                 this.$store.commit('add_gold', item.value);
                 this.$store.commit('remove_item', {'item': item, 'qty': qty});
+                this.$store.dispatch('check_achievements');
                 this.$store.commit('save');
 
                 // Set sell timeout
@@ -235,7 +239,7 @@ const Inventory = Vue.component('inventory', {
         },
         totalitems() {
             return this.$store.getters.inventory.length;
-        }
+        },
     },
     computed: {
         items_list() {
@@ -258,8 +262,20 @@ const Inventory = Vue.component('inventory', {
                     inv[i.id] = o;
                 }
             });
+
             // add sorts, filters
+            //if (this.$store.getters.)
             return inv;
+        },
+        sorts() {
+//filtttttterssssssss
+        },
+        filters() {
+
+        },
+
+        new_achievements() {
+            return this.$store.getters.new_achievements;
         }
     }
 });
