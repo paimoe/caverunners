@@ -97,7 +97,8 @@ const Statusbar = Vue.component('statusbar', {
             itemchance = 101;
             if (rng < itemchance) {
                 // got an item!
-                let numnewitems = Math.floor(rand_between(1,3));
+                let itembooster = sum_field(this.$store.getters.upgrades(true, 'itemfind'), 'hvalue');
+                let numnewitems = Math.floor(rand_between(1,3)) + itembooster;
                 let ritem = random_item(this.$store.getters.items, numnewitems);
                 //let ritem = _.sample(this.$store.getters.items);
                 newitems = newitems.concat(ritem);
@@ -120,8 +121,7 @@ const Statusbar = Vue.component('statusbar', {
 
             this.$store.dispatch('check_achievements');
 
-            this.$store.commit('save');
-            this.$parent.message('Game Saved');
+            this.$store.dispatch('save');
 
         },
         css_gradient_percent() {
@@ -228,10 +228,14 @@ const Inventory = Vue.component('inventory', {
                 this.$store.commit('add_gold', item.value);
                 this.$store.commit('remove_item', {'item': item, 'qty': qty});
                 this.$store.dispatch('check_achievements');
-                this.$store.commit('save');
+                this.$store.dispatch('save');
 
                 // Set sell timeout
             }
+        },
+        midsell(item) {
+            // are we in the middle of selling this item?r
+            return false;
         },
         totalvalue() {
             let inv = this.$store.getters.inventory;
@@ -239,6 +243,10 @@ const Inventory = Vue.component('inventory', {
         },
         totalitems() {
             return this.$store.getters.inventory.length;
+        },
+        close_achievement(name) {
+            this.$store.state.tmp.achievements = _.reject(this.$store.state.tmp.achievements, a => a.name == name);
+            console.log('name', this.$store.state.tmp.achievements, name);
         },
     },
     computed: {
@@ -283,7 +291,13 @@ const Actionmenu = Vue.component('actionmenu', {
     template: '#actionmenu',
     computed: {
         upgrades() {
-            return this.$store.getters.upgrades(false);
+            let ups = this.$store.getters.upgrades(false);
+            // only show ones that don't end in 1
+            return _.filter(ups, u => u.cost % 10 === 0);
+        },
+        messages() {
+             let z = this.$store.getters.messages;
+             return z;
         }
     },
     methods: {
@@ -306,11 +320,16 @@ const Actionmenu = Vue.component('actionmenu', {
             if (pl.gold >= up.cost) {
                 this.$store.commit('add_gold', -up.cost);
                 this.$store.commit('add_upgrade', up.name);
-                this.$store.commit('save');
+                this.$store.dispatch('save');
             } else {
                 // can't afford it bruh
                 this.$parent.message('Cannot afford this upgrade');
             }
+        },
+        messageclass(m) {
+            let cls = ['message'];
+            cls.push('message-' + m.type);
+            return cls;
         }
     }
 });

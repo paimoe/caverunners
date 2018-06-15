@@ -65,6 +65,16 @@
         #part-inv, .main {
             min-height: calc(100% - 70px);
         }
+        #part-inv .invtablebg {
+            padding:5px; /* >0 to show the background */
+            background: repeating-linear-gradient(
+              -55deg,
+              #222,
+              #222 10px,
+              #333 10px,
+              #333 20px
+            );
+        }
         #part-char, #part-actions {
             background:#E0C7A8;
             min-height: calc(100% - 70px);
@@ -150,9 +160,40 @@
         }
         .achievementdisplay .achclose span {
             margin-right:5px;
+            cursor: pointer;
         }
         .achievementdisplay .achimg  {
             display:flex;justify-content:center;align-items:center;
+        }
+
+        .messages .message {
+            padding:10px;
+            border-width:1px;
+            border-style:solid;
+            border-left:0;
+            border-right:0;
+        }
+        .messages .message-simple {
+            background: repeating-linear-gradient(
+                -55deg,
+                #222,
+                #222 10px,
+                #333 10px,
+                #333 20px
+              );
+            color:#fff;
+            border:1px solid black;
+        }
+        .messages .message-saveload {
+            background: repeating-linear-gradient(
+                -55deg,
+                #5d9634,
+                #5d9634 10px,
+                #538c2b 10px,
+                #538c2b 20px
+              );
+            color:#fff;
+            border-color:#000;
         }
         </style>
     </head>
@@ -238,6 +279,12 @@
         </template>
         <template id="actionmenu">
             <div class="pure-u-1-3" id="part-actions">
+                <div class="messages">
+                    <div v-for="m in messages" v-bind:class="messageclass(m)">
+                        <!-- icon later -->
+                        {{ m.m }}
+                    </div>
+                </div>
                 <div class="upgrades nicetable">
                     <h1>Upgrades</h1>
                     <div v-for="(u, name) in upgrades" v-bind:class="{'owned': owned(u.name), 'pure-g': 1}">
@@ -250,7 +297,7 @@
                             <input type="button" v-if="owned(u.name)" class="buybutton upgradebtn off" value="Owned &#x1F5F8;" disabled="disabled" />
                         </div>
                     </div>
-            </div>
+                </div>
             </div>
         </template>
         <template id="inventory">
@@ -262,15 +309,17 @@
                         <h3>&rarr; {{ ach.nice_name }}</h3>
                         <p>{{ ach.description }}</p>
                     </div>
-                    <div class="pure-u-1-8 achclose"><span>&#x2A2F;</span></div>
+                    <div class="pure-u-1-8 achclose"><span v-on:click="close_achievement(ach.name)">&#x2A2F;</span></div>
                 </div>
-                <div class="nicetable">
-                    <h1>Inventory</h1>
-                    <!-- Inv total -->
-                    <div class="pure-g">
-                        <div class="pure-u-1-3"><div v-if="has_upgrade('inv_totalvalue')">Total Value: <em class="gold">{{ totalvalue() }}</em></div></div>
-                        <div class="pure-u-1-3"><div v-if="has_upgrade('inv_filter')" style="text-align:center">Filter</div></div>
-                        <div class="pure-u-1-3"><div v-if="has_upgrade('inv_totalcount')">Total Items: {{ totalitems() }}</div></div>
+                <div class="invtablebg">
+                    <div class="nicetable">
+                        <h1>Inventory</h1>
+                        <!-- Inv total -->
+                        <div class="pure-g">
+                            <div class="pure-u-1-3"><div v-if="has_upgrade('inv_totalvalue')">Total Value: <em class="gold">{{ totalvalue() }}</em></div></div>
+                            <div class="pure-u-1-3"><div v-if="has_upgrade('inv_filter')" style="text-align:center">Filter</div></div>
+                            <div class="pure-u-1-3"><div v-if="has_upgrade('inv_totalcount')">Total Items: {{ totalitems() }}</div></div>
+                        </div>
                     </div>
                 </div>
                 <!-- if no upgrade for grouped, dont show qty column -->
@@ -292,7 +341,9 @@
                             <td>{{ i.value }}</td>
                             <td v-if="has_upgrade('inv_weight')">{{ i.size }}</td>
                             <td>{{ i.type }}</td>
-                            <td><a v-on:click="sell(i)">Sell</a></td>
+
+                            <td v-if="midsell(i)">{{ midsell(i) }}</td>
+                            <td v-if="!midsell(i)"><a v-on:click="sell(i)">Sell</a></td>
                         </tr>
                     </tbody>
                 </table>
@@ -386,7 +437,7 @@
                             this.fetch_from_idb('achievements');
 
                             DB.getItem('save').then(resp => {
-                                console.log('SAVE', resp);
+                                //console.log('SAVE', resp);
                                 if (resp !== null) {
                                     self.$store.commit('loadsave', resp);
                                 }
@@ -397,7 +448,7 @@
                     },
                     message(msg) {
                         //console.log('called message() with msg=', msg);
-                        this.$store.commit('message', {'msg': msg});
+                        this.$store.commit('message', {'type': 'simple', m: msg});
                     },
                     CHEATER() {
                         var self = this;
@@ -411,7 +462,6 @@
                             level(level) {
                                 self.$store.state.player.level = level;
                                 var nlevel = self.$store.getters.next_level;
-                                console.log(nlevel)
                             },
                             add_exp(exp) {
                                 self.$store.commit('add_exp', exp);
@@ -419,7 +469,12 @@
                             clear() {
                                 self.$store.state.player = {'name': 'dux', level: 1, exp: 0, gold:0, upgrades:[], capacity:BASES.INV_SIZE};
                                 self.$store.state.inv = [];
-                            }
+                            },
+                            add_item(itemid) {
+                                let item = _.filter(self.$store.state.items, i => i.id == itemid);
+                                self.$store.commit('add_to_inventory', item);
+                                console.log('Added', item[0].name);
+                            },
                         }
 
                     }

@@ -31,7 +31,9 @@ const store = new Vuex.Store({
             result: {}
         },
         timers: {
-            sell: 0,
+            selling: {
+
+            },
         },
         stats: {
             owned: {
@@ -48,29 +50,36 @@ const store = new Vuex.Store({
         }
     },
     actions: {
+        save(ctx) {
+            let save = {
+                player: ctx.state.player,
+                stats: ctx.state.stats,
+                inv: ctx.state.inv,
+            };
+            DB.setItem('save', save);
+            //ctx.commit('message', {type: 'saveload', m: 'Game Saved', unique:true});
+        },
         check_achievements(ctx) {
             let achs = ctx.getters.achs;
             // Loop all achievements, that we haven't achieved
             let open = _.reject(achs, a => _.contains(ctx.state.player.achieved, a.name));
             var satisfied = false;
             for (let ach of open) {
+
+                // Own 'n' of these items
                 if ('own' in ach.exec) {
                     satisfied = false; // set it to false in each clause, because one up above may have succeeded
                     var true_list = [];
                     // own these specific items
                     _.each(ach.exec.own, n => {
                         var items_count = ctx.getters.inv_item(n[0]).length;
-                        if (items_count >= n[1]) {
-                            // success
-                            console.log('YES!', items_count)
-                            true_list.push(true);
-                        } else {
-                            true_list.push(false);
-                        }
+                        true_list.push(items_count >= n[1]); // if our items len is more than required
                     });
 
                     satisfied = _.every(true_list, x => x === true);
                 }
+
+                // Own 'n' of these item types (eg 100 Junk, 100 Treasure)
                 if ('own_type' in ach.exec) {
                     satisfied = false;
                     // own these item types
@@ -78,11 +87,7 @@ const store = new Vuex.Store({
                     _.each(ach.exec.own, n => {
                         //n = [type, qty]
                         var items_count = ctx.getters.inv_type(n[0]).length; // todo: just get inv at the top, once? then filter that list
-                        if (items_count >= n[1]) {
-                            true_list.push(true);
-                        } else {
-                            true_list.push(false);
-                        }
+                        true_list.push(items_count >= n[1]); // if our items len is more than required
                     });
 
                     satisfied = _.every(true_list, x => x === true);
@@ -92,11 +97,15 @@ const store = new Vuex.Store({
                     // achieved all applicable conditions
                     // add this to the players achieved
                     ctx.commit('add_achievement', ach);
-                    ctx.commit('save');
-                    ctx.commit('message', 'Achievement Unlocked!');
+                    ctx.dispatch('save');
+                    ctx.commit('message', {'type': 'ach', 'm': 'Achievement Unlocked!', '_meta': {a: ach}});
                 }
             }
-        }
+        },
+
+        start_timer(ctx) {
+            let timers = ctx.state.timers;
+        },
     },
     mutations: {
         items (state, items) {
@@ -150,7 +159,7 @@ const store = new Vuex.Store({
             var nlevel = this.getters.next_level;
             if (nlevel.exp <= state.player.exp + exp && nlevel !== false) {
                 // we levelled up
-                console.log('levelled up!', nlevel.capacity);
+                //console.log('levelled up!', nlevel.capacity);
                 state.player.level += 1;
                 state.player.capacity = INV_BASE + nlevel.capacity;
 
@@ -165,6 +174,7 @@ const store = new Vuex.Store({
             //console.log('lev', nlevel, state.player.level, state.player.exp)
         },
         save(state) {
+            alert('dont use this, use dispatch()')
             // store state.player, inv in DB
             let save = {
                 player: state.player,
@@ -172,16 +182,41 @@ const store = new Vuex.Store({
                 inv: state.inv,
             };
             DB.setItem('save', save);
+            state.messages.push({type: 'saved', m: 'Game Saved', unique:true});
         },
         loadsave(state, sdata) {
             console.log('loaded save', sdata.player.name);
             state.player = sdata.player;
             state.stats = sdata.stats;
             state.inv = sdata.inv;
-            state.messages.push('Save loaded');
+            state.messages.push({type: 'saveload', m:'Save loaded'});
         },
         message(state, message) {
-            state.messages.push(message);
+            if (typeof(message) === 'string') {
+                message = {
+                    type: 'simple',
+                    m: message,
+                    _meta: {},
+                    when: Date.now(),
+                    timed: 0, // can we time it to auto-close easily?
+                };
+            }
+
+            if (!message.when) {
+                message.when = Date.now();
+            }
+
+            // Check if we only want one of these, in which case, we'll overwrite with this newer one
+            if (message.unique === true || message.unique === 1) {
+                console.log('Purging unique messages for message:', message.m);
+                var purged = _.reject(state.messages, m => m.m == message.m);
+                purged.push(message);
+                state.messages = purged;
+            } else {
+
+                // Make persistant later, with an 'unread messages' list, but for now whatevs
+                state.messages.push(message);
+            }
         },
         run(state, full) {
             state.run = full;
@@ -321,7 +356,8 @@ const store = new Vuex.Store({
         achs: state => _.sortBy(state.achievements, a => a.name),
         new_achievements: state => state.tmp.achievements,
 
-        // non game related
+        // messages
+        messages: state => state.messages,
 
     }
 });
