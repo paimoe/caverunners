@@ -106,6 +106,29 @@ const store = new Vuex.Store({
         start_timer(ctx) {
             let timers = ctx.state.timers;
         },
+
+        remove_item(ctx, payload) {
+            var item = payload.item; var qty = payload.qty;
+            let newinv = [];
+            let maxsell = ctx.getters.sum_inv_type('invpagemultisell');
+
+            let num = ctx.getters.inv_item(item.id).length;
+            qty = Math.min(maxsell + 1, qty); // how much we're trying to remove
+            qty = Math.min(qty, num); // now bound it to their total, so we dont go over
+            qty = Math.max(qty, 1); // may as well not go negative
+            //console.log('remove_item', item, qty, num);
+            // Check for negative, and max
+            _.each(ctx.state.inv, (ele, idx) => {
+                if (item.id == ele.id && qty > 0) {
+                    // Remove
+                    //console.log('skippin', ele.name);
+                    qty--;
+                } else {
+                    newinv.push(ele);
+                }
+            });
+            ctx.state.inv = newinv;
+        }
     },
     mutations: {
         items (state, items) {
@@ -132,20 +155,6 @@ const store = new Vuex.Store({
             state.inv = state.inv.concat(items);
         },
         remove_item(state, payload) {
-            var item = payload.item; var qty = payload.qty;
-            let newinv = [];
-            //console.log('remove_item', item, qty);
-            _.each(state.inv, (ele, idx) => {
-                if (item.id == ele.id && qty > 0) {
-                    // Remove
-                    //console.log('skippin', ele.name);
-                    qty--;
-                } else {
-                    newinv.push(ele);
-                }
-            });
-            state.inv = newinv;
-            //this.save(state);
         },
         add_gold(state, amount) {
             // amount can also be negative
@@ -340,6 +349,10 @@ const store = new Vuex.Store({
         },
         magic_find: state => {
             return BASES.MF;
+        },
+        sum_inv_type: (state, g) => type => {
+            let x = g.upgrades(true, type);
+            return sum_field(x, 'hvalue');
         },
 
         // Latest run

@@ -217,16 +217,21 @@ const Inventory = Vue.component('inventory', {
         },
         sell(item) {
             let qty = 1;
-            if (this.has_upgrade('inv_multisell')) {
+            let base_allow = total = 1;
+            let increased_allow = this.$store.getters.sum_inv_type('invpagemultisell');
+            //console.log('increased_allow', increased_allow);
+            if (increased_allow > 0) {
                 // Ask for amount to sell
+                total = base_allow + increased_allow;
+                qty = prompt(`How many do you wish to sell? Max: ${total}`, total);
             }
 
             // Confirm the sell
-            if (confirm('Sell 1x ' + item.name + '?')) {
+            if (confirm(`Sell ${qty}x ` + item.name + '?')) {
 
                 // Add gold
                 this.$store.commit('add_gold', item.value);
-                this.$store.commit('remove_item', {'item': item, 'qty': qty});
+                this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
                 this.$store.dispatch('check_achievements');
                 this.$store.dispatch('save');
 
