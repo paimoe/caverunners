@@ -195,6 +195,45 @@
             color:#fff;
             border-color:#000;
         }
+
+        .rundone .items {
+            display: table;
+            padding-left: 10px;
+        }
+        .rundone .items li {
+            display: table-cell;
+            cursor: pointer;
+            padding: 5px;
+            float:left;
+            border: 1px solid #888;
+            padding: 10px;
+            margin-right:10px;
+            border-radius:5px;
+        }
+        .rundone .items li span {
+
+        }
+        .rundone .items .ipicked {
+            /* greenie */
+            border: 1px solid #538c2b;
+            background: #5d9634;
+            color:#fff;
+        }
+        .rundone input[type=button] {
+            margin:0 0 10px 10px;
+            padding:10px;
+        }
+
+        .gamestuff {
+            margin:10px;
+            border: 1px solid #111;
+            background: #333;
+        }
+        .gamestuff p {
+            color:#fff;
+            font-size:80%;
+            margin:5px;
+        }
         </style>
     </head>
     <body>
@@ -222,12 +261,19 @@
             </div>
         </template>
         <template id="notices">
-            <div v-if="show()" class="pure-u-1" id="noticebar">
+            <div v-if="show()" class="pure-u-1 rundone" id="noticebar">
                 <p>Your run took {{ run.time.toFixed(2) }}s!</p>
                 <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em> gold.</p>
-                <p v-if="run.items.length > 0">You also found the following items:</p>
-                <ul v-if="run.items.length > 0"><li v-if="run.items.length > 0" v-for="i in run.items">{{ i.name }}</li></ul>
-                <input type="button" value="OK" v-on:click="confirm_end()" />
+                <p v-if="run.items.length > 0">You also found the following items. Click to select the ones to keep.</p>
+                <ul class="items" v-if="run.items.length > 0">
+                    <li v-for="i in run.items" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}]" v-on:click="select(i)">
+                        {{ text(i) }}
+                        <span v-if="selected(i)">&#9745;</span>
+                        <span v-if="!selected(i)">&#9744;</span>
+                    </li>
+                </ul>
+                <input type="button" :value="endbutton" v-on:click="confirm_end()" />
+                <input type="button" v-if="has_upgrade('runtakeall')" value="Take All" v-on:click="take_all()" />
             </div>
         </template>
         <template id="charmenu">
@@ -272,6 +318,12 @@
                     </div>
                 </div>
 
+                <div class="gamestuff">
+                    <p>{{ obstats.update }}</p>
+                    <p>{{ obstats.items }} items, {{ obstats.upgrades }} upgrades, {{ obstats.achs }} achievements</p>
+                    <p>Version: {{ obstats.version }}</p>
+                </div>
+
                 <div class="credits">
                     <p>&copy; 2018 &middot; <a href="https://github.com/paimoe/overburdened" target="_blank">github</a></p>
                 </div>
@@ -288,11 +340,11 @@
                 <div class="upgrades nicetable">
                     <h1>Upgrades</h1>
                     <div v-for="(u, name) in upgrades" v-bind:class="{'owned': owned(u.name), 'pure-g': 1}">
-                        <div class="pure-u-1-2">
+                        <div class="pure-u-3-4">
                             <p class="upgrade-name">{{ u.nice_name }}</p>
                             <p v-if="!owned(u.name)" class="upgrade-desc">{{ u.description }}</p>
                         </div>
-                        <div class="pure-u-1-2">
+                        <div class="pure-u-1-4">
                             <input type="button" v-if="!owned(u.name)" v-bind:class="{'buybutton':1, 'upgradebtn':1, 'off': owned(u.name)||toomuch(u)}" v-bind:value="buytext(u)" v-on:click="purchase(u)" :disabled="owned(u.name) || toomuch(u)" />
                             <input type="button" v-if="owned(u.name)" class="buybutton upgradebtn off" value="Owned &#x1F5F8;" disabled="disabled" />
                         </div>
@@ -316,9 +368,9 @@
                         <h1>Inventory</h1>
                         <!-- Inv total -->
                         <div class="pure-g">
-                            <div class="pure-u-1-3"><div v-if="has_upgrade('inv_totalvalue')">Total Value: <em class="gold">{{ totalvalue() }}</em></div></div>
+                            <div class="pure-u-1-3"><div>Total Value: <em class="gold">{{ totalvalue() }}</em></div></div>
                             <div class="pure-u-1-3"><div v-if="has_upgrade('inv_filter')" style="text-align:center">Filter</div></div>
-                            <div class="pure-u-1-3"><div v-if="has_upgrade('inv_totalcount')">Total Items: {{ totalitems() }}</div></div>
+                            <div class="pure-u-1-3"><div>Total Items: {{ totalitems() }}</div></div>
                         </div>
                     </div>
                 </div>

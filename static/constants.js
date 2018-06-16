@@ -22,16 +22,25 @@ function has_flag(name) {
 var DB = localforage;
 var HASH = 'd5fde2d59b7bdada04dec44875d89636';
 var rand_between = (min, max) => Math.random() * (max - min) + min;
-var random_item = (items, num) => {
+var random_item = (items, num, areas) => {
     /*
      So get the unique weights, and lean towards the lower weights
      Get a random number, and make the pool out of ones with rarity <= that number
      for [1,10], rand(1,11) will bias towards the lower
      then out of the possible options, pick an actual random one (_.sample)
     */
+    if (!areas) {
+        areas = [null];
+    } else {
+        areas = [areas, null];
+    }
+
+
     var u = _.uniq(_.pluck(items, 'rarity'));
     var s = u.reduce((acc,val) => acc + val);
     var r = rand_between(1, 1+s).toFixed(0);
+
+    var f = _.filter(items, i => _.some(areas, i.location));
     var f = _.filter(items, i => i.rarity <= r);
     // this is fucked, since i can't pick double junk etc, it'll just do one of each
     // so redo at some point

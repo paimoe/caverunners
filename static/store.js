@@ -42,7 +42,10 @@ const store = new Vuex.Store({
             sold: {
 
             },
-            gold: { earned: 0 }
+            gold: { earned: 0, spent: 0, sales: 0 },
+            counters: {
+
+            },
         },
         tmp: {
             achievements: [], // newly unlocked
@@ -59,16 +62,26 @@ const store = new Vuex.Store({
             DB.setItem('save', save);
             //ctx.commit('message', {type: 'saveload', m: 'Game Saved', unique:true});
         },
+        end_run(ctx, run) {
+            // ummm, oh yeah group into qty too
+            ctx.state.run = run;
+        },
         check_achievements(ctx) {
             let achs = ctx.getters.achs;
             // Loop all achievements, that we haven't achieved
             let open = _.reject(achs, a => _.contains(ctx.state.player.achieved, a.name));
-            var satisfied = false;
+            var satisfied = [];
+
+            function all_true(list) {
+                return list.length > 0 && _.every(true_list, x => x === true);
+            }
+
             for (let ach of open) {
+
+                var min_trues = Object.keys(ach.exec).length;
 
                 // Own 'n' of these items
                 if ('own' in ach.exec) {
-                    satisfied = false; // set it to false in each clause, because one up above may have succeeded
                     var true_list = [];
                     // own these specific items
                     _.each(ach.exec.own, n => {
@@ -76,28 +89,27 @@ const store = new Vuex.Store({
                         true_list.push(items_count >= n[1]); // if our items len is more than required
                     });
 
-                    satisfied = _.every(true_list, x => x === true);
+                    satisfied.push(all_true(true_list));
                 }
 
                 // Own 'n' of these item types (eg 100 Junk, 100 Treasure)
                 if ('own_type' in ach.exec) {
-                    satisfied = false;
                     // own these item types
                     var true_list = [];
-                    _.each(ach.exec.own, n => {
+                    _.each(ach.exec.own_type, n => {
                         //n = [type, qty]
                         var items_count = ctx.getters.inv_type(n[0]).length; // todo: just get inv at the top, once? then filter that list
                         true_list.push(items_count >= n[1]); // if our items len is more than required
                     });
 
-                    satisfied = _.every(true_list, x => x === true);
+                    satisfied.push(all_true(true_list));
                 }
 
-                if (satisfied) {
+                if (all_true(satisfied) && min_trues === satisfied.length) {
                     // achieved all applicable conditions
                     // add this to the players achieved
                     ctx.commit('add_achievement', ach);
-                    ctx.dispatch('save');
+                    //ctx.dispatch('save');
                     ctx.commit('message', {'type': 'ach', 'm': 'Achievement Unlocked!', '_meta': {a: ach}});
                 }
             }
@@ -241,6 +253,23 @@ const store = new Vuex.Store({
             state.timers.sell = Date.now() + ((increase) * 1000); // can't sell until now+x seconds
         },
 
+        // internal stats
+        count(state, key) {
+            state.stats.counters[key] = state.stats.counters[key] || 0;
+            state.stats.counters[key] += 1;
+        },
+        stat(state, info) {
+            // info = ['gold_earned', 220] ['gold_spent', 21]
+            // keys: gold_earned, gold_spent, [own, itemid, qty]
+            // for now just gold
+            var stat;
+            if (info.length === 2 && info[0].startsWith('gold')) {
+                statkey = info[0].split('_')[1];
+                //console.log('setting ', statkey, ' to +', info[1]);
+                state.stats.gold[statkey] += info[1];
+            }
+        }
+
         
     },
     getters: {
@@ -371,6 +400,11 @@ const store = new Vuex.Store({
 
         // messages
         messages: state => state.messages,
+
+        // stats
+        counter: state => key => {
+            return state.stats.counters[key];
+        },
 
     }
 });

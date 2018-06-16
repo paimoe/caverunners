@@ -11,18 +11,22 @@ const Statusbar = Vue.component('statusbar', {
             gold: 0,
             exp: 0,
             items: [],
+        },
+        runcomplete: {
+
         }
     }),
     computed: {
         is_running() {
             //console.log('time', this.time, this.time>0)
             let run = this.$store.getters.run;
-            return this.time > 0;// || run.ack_end == false;
+            return this.time > 0 || run.ack_end == false;
         },
         timeleft() {
             let s = this.time / 1000;
             let run = this.$store.getters.run;
-            if (this.running == true/* || run.ack_end != true*/) {
+            if (this.running == true || run.ack_end != true) {
+                // Also account for minutes
                 return (Math.round(s * 100) / 100).toFixed(2);
             } else {
                 if (this.$store.getters.over_hard_limit) {
@@ -81,6 +85,7 @@ const Statusbar = Vue.component('statusbar', {
             let diff = this.$store.getters.difficulty;
             let gold = rand_between(diff, diff * 0.5);
             this.$store.commit('add_gold', gold);
+            this.$store.commit('stat', ['gold_earned', gold]);
             //console.log('gold!', gold);
 
             // Gain exp
@@ -99,15 +104,16 @@ const Statusbar = Vue.component('statusbar', {
                 // got an item!
                 let itembooster = sum_field(this.$store.getters.upgrades(true, 'itemfind'), 'hvalue');
                 let numnewitems = Math.floor(rand_between(1,3)) + itembooster;
-                let ritem = random_item(this.$store.getters.items, numnewitems);
+                let area = null;
+                let ritem = random_item(this.$store.getters.items, numnewitems, area);
                 //let ritem = _.sample(this.$store.getters.items);
                 newitems = newitems.concat(ritem);
-                //console.log('You got an item!', ritem.name);
-                this.$store.commit('add_to_inventory', newitems);
+                //console.log('You got an item!', ritem);
+                //this.$store.commit('add_to_inventory', newitems);
             }
 
             //console.log('gained', gold.toFixed(0), 'gold and', expgain.toFixed(0), 'exp!')
-            this.$store.commit('run', {
+            this.$store.dispatch('end_run', {
                 running: this.running,
                 ack_end: this.ack_end,
                 ended: true,
@@ -116,6 +122,9 @@ const Statusbar = Vue.component('statusbar', {
                     'exp': expgain,
                     'items': newitems,
                     'time': this.time_take/1000, // only used for display atm
+                    'boost': {
+                        gold: 0,
+                    }
                 }
             });
 
@@ -137,9 +146,10 @@ const Statusbar = Vue.component('statusbar', {
 });
 const Notices = Vue.component('notices', {
     template: '#notices',
-    data: () => {
-        lastrun: {}
-    },
+    data: () => ({
+        lastrun: {},
+        selected_list: [],
+    }),
     methods: {
         show() {
             let run = this.$store.getters.run;
@@ -148,18 +158,55 @@ const Notices = Vue.component('notices', {
             }
             return false;
         },
+
         confirm_end() {
+            // Add the items
+            //console.log(`Adding ${this.selected_list.length} items`);
+            this.$store.commit('add_to_inventory', this.selected_list);
+            
             this.ack_end = true;
             this.last_run = 'etc';
             this.$store.commit('run_end');
-        }
+            this.$store.dispatch('save');
+            this.selected_list = [];
+        },
+
+        take_all() {
+            this.selected_list = this.run.items;
+            this.confirm_end();
+        },
+
+        select(item) {
+            let wh = _.findWhere(this.selected_list, {id: item.id});
+            if (wh !== undefined) {
+                // in the list, so unselect it
+                this.selected_list = _.reject(this.selected_list, x => x.id == item.id);
+            } else {
+                this.selected_list.push(item);
+            }
+        },
+        selected(item) {
+            return _.some(this.selected_list, i => i.id == item.id);
+        },
+        text(item) {
+            return item.name;
+        },
+        has_upgrade(up) {
+            return this.$store.getters.has_upgrade(up);
+        },
     },
     computed: {
         run() {
             // Get latest run
             let run = this.$store.getters.run.result;
             return run;
-
+        },
+        runitems() {
+            // Group it
+        },
+        endbutton() {
+            // 
+            return `Take ${this.selected_list.length} items`;
         }
     }
 });
@@ -190,6 +237,15 @@ const Charmenu = Vue.component('charmenu', {
                 max_penalty: this.$store.getters.max_penalty,
                 achievement_count: this.$store.getters.player.achieved.length,
             }
+        },
+        obstats() {
+            return {
+                update: 'Overburdened',
+                items: this.$store.getters.items.length,
+                upgrades: this.$store.getters.upgrades(false).length,
+                achs: this.$store.getters.achs.length,
+                version: 0.1,
+            }
         }
     },
     methods: {
@@ -201,7 +257,7 @@ const Charmenu = Vue.component('charmenu', {
         set_name() {
             let name = prompt('What is your name?');
             this.$store.state.player.name = name;
-            this.$store.commit('save');
+            this.$store.dispatch('save');
         }
 
     }
@@ -230,7 +286,8 @@ const Inventory = Vue.component('inventory', {
             if (confirm(`Sell ${qty}x ` + item.name + '?')) {
 
                 // Add gold
-                this.$store.commit('add_gold', item.value);
+                this.$store.commit('add_gold', item.value * qty);
+                this.$store.commit('stat', ['gold_sales', item.value * qty]);
                 this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
                 this.$store.dispatch('check_achievements');
                 this.$store.dispatch('save');
@@ -244,9 +301,15 @@ const Inventory = Vue.component('inventory', {
         },
         totalvalue() {
             let inv = this.$store.getters.inventory;
+            if (!this.$store.getters.has_upgrade('inv_totalvalue')) {
+                return '?';
+            }
             return _.reduce(inv, (acc, val) => acc + val.value, 0);
         },
         totalitems() {
+            if (!this.$store.getters.has_upgrade('inv_totalcount')) {
+                return '?';
+            }
             return this.$store.getters.inventory.length;
         },
         close_achievement(name) {
@@ -325,6 +388,7 @@ const Actionmenu = Vue.component('actionmenu', {
             if (pl.gold >= up.cost) {
                 this.$store.commit('add_gold', -up.cost);
                 this.$store.commit('add_upgrade', up.name);
+                this.$store.commit('stat', ['gold_spent', up.cost]);
                 this.$store.dispatch('save');
             } else {
                 // can't afford it bruh
