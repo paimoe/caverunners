@@ -79,6 +79,9 @@
         #part-char, #part-actions {
             background:#E0C7A8;
             min-height: calc(100% - 70px);
+            background: linear-gradient(#a2753f, #E0C7A8 30%, #E0C7A8 100%);
+            border: 1px solid #E0C7A8;
+            box-sizing: border-box;
         }
         #part-char .charbox, #part-actions .upgrades, .nicetable {
             background: #39535E;            
@@ -233,11 +236,30 @@
             border: 1px solid #111;
             background: #333;
         }
-        .gamestuff p {
+        .gamestuff p{
             color:#fff;
             font-size:80%;
             font-family:sans-serif;
             margin:5px;
+        }
+        .gamestuff div {
+            color:#fff;
+            font-family:sans-serif !important;
+            font-size:13px;
+        }
+        .gamestuff div.check {
+            text-align:right;
+        }
+        .gamestuff div.pure-g {
+            margin:5px;
+        }
+
+        progress.xp {
+            padding:1px;
+            width:100%;
+            height:8px;
+            border:1px solid #496A78;
+            border-radius:5px;
         }
         </style>
     </head>
@@ -290,6 +312,9 @@
                         <div class="pure-u-1-2">Experience</div>
                         <div class="pure-u-1-2">{{ player.exp.toFixed(0) }}/{{ required_exp() }}</div>
                     </div>
+                    <!--<div class="pure-g">
+                        <progress class="xp" v-bind:max="required_exp()" v-bind:value="player.exp.toFixed(0)"></progress>
+                    </div>-->
                     <div class="pure-g">
                         <div class="pure-u-1-2">Capacity</div>
                         <div class="pure-u-1-2"><span class="penalty" v-if="penalty">+{{ penalty }}%</span> {{ weight }}/{{ capacity }}</div>
@@ -324,6 +349,14 @@
                 </div>
 
                 <div class="gamestuff">
+                    <p><b>Options</b></p>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4"><label for="confirm_sell">Confirm Sell</label></div>
+                        <div class="pure-u-1-4 check"><input type="checkbox" id="confirm_sell" :checked="checked_option('confirm_sell')" v-on:click="check_option('confirm_sell')" /></div>
+                    </div>
+                </div>
+
+                <div class="gamestuff">
                     <p>{{ obstats.update }}</p>
                     <p>{{ obstats.items }} items, {{ obstats.upgrades }} upgrades, {{ obstats.achs }} achievements</p>
                     <p>Version: {{ obstats.version }}</p>
@@ -346,11 +379,11 @@
                     <h1><span>Upgrades</span></h1>
                     <div v-for="(u, name) in upgrades" v-bind:class="{'owned': owned(u.name), 'pure-g': 1}">
                         <div class="pure-u-3-4">
-                            <p class="upgrade-name">{{ u.nice_name }}</p>
+                            <p class="upgrade-name">{{ u.nice_name }} <span class="upgrade-req">{{ has_requirement(u) }}</span></p>
                             <p v-if="!owned(u.name)" class="upgrade-desc">{{ u.description }}</p>
                         </div>
                         <div class="pure-u-1-4">
-                            <input type="button" v-if="!owned(u.name)" v-bind:class="{'buybutton':1, 'upgradebtn':1, 'off': owned(u.name)||toomuch(u)}" v-bind:value="buytext(u)" v-on:click="purchase(u)" :disabled="owned(u.name) || toomuch(u)" />
+                            <input type="button" v-if="!owned(u.name) && done_requirements(u)" v-bind:class="{'buybutton':1, 'upgradebtn':1, 'off': owned(u.name)||toomuch(u)}" v-bind:value="buytext(u)" v-on:click="purchase(u)" :disabled="owned(u.name) || toomuch(u)" />
                             <input type="button" v-if="owned(u.name)" class="buybutton upgradebtn off" value="Owned &#x1F5F8;" disabled="disabled" />
                         </div>
                     </div>

@@ -246,6 +246,9 @@ const Charmenu = Vue.component('charmenu', {
                 achs: this.$store.getters.achs.length,
                 version: 0.1,
             }
+        },
+        opts() {
+            return this.$store.getters.options;
         }
     },
     methods: {
@@ -258,6 +261,13 @@ const Charmenu = Vue.component('charmenu', {
             let name = prompt('What is your name?');
             this.$store.state.player.name = name;
             this.$store.dispatch('save');
+        },
+        check_option(opt) {
+            // Return for the current value
+            return this.$store.dispatch('set_option', opt);
+        },
+        checked_option(opt) {
+            return this.$store.getters.option(opt);
         }
 
     }
@@ -282,10 +292,22 @@ const Inventory = Vue.component('inventory', {
                 qty = prompt(`How many do you wish to sell? Max: ${total}`, total);
             }
 
+            if (qty === null) {
+                // they clicked cancel
+                return;
+            }
+
             // Confirm the sell
             // Update qty to the max
             qty = this.$store.getters.max_item_sell([item, qty]);
-            if (confirm(`Sell ${qty}x ` + item.name + '?')) {
+
+            let confirmed = false;
+            if (this.$store.getters.option('confirm_sell') == 1) {
+                confirmed = confirm(`Sell ${qty}x ` + item.name + '?');
+            } else {
+                confirmed = true;
+            }
+            if (confirmed) {
 
                 // Add gold
                 this.$store.commit('add_gold', item.value * qty);
@@ -405,6 +427,19 @@ const Actionmenu = Vue.component('actionmenu', {
             let cls = ['message'];
             cls.push('message-' + m.type);
             return cls;
-        }
+        },
+        has_requirement(up) {
+            if (!up.requires) return;
+
+            // See what it requires
+            let ups = this.$store.getters.upgrade(up.requires);
+            if (ups !== false && !this.owned(ups.name)) {
+                return `(requires: ${ups.nice_name})`;
+            }
+            return '';
+        },
+        done_requirements(up) {
+            return (up.requires != false && this.owned(up.requires)) || up.requires == false;
+        },
     }
 });

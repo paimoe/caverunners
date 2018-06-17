@@ -15,6 +15,9 @@ const store = new Vuex.Store({
             capacity: BASES.INV_SIZE,
             upgrades: [],
             achieved: [],
+            opts: {
+                confirm_sell: 1, // default to confirm on
+            },
         },
 
         time: {
@@ -59,6 +62,7 @@ const store = new Vuex.Store({
                 stats: ctx.state.stats,
                 inv: ctx.state.inv,
             };
+            //if (!save.player.opts) save.player.opts = {};
             DB.setItem('save', save);
             //ctx.commit('message', {type: 'saveload', m: 'Game Saved', unique:true});
         },
@@ -136,6 +140,18 @@ const store = new Vuex.Store({
                 }
             });
             ctx.state.inv = newinv;
+        },
+
+        // opts
+        set_option(ctx, opt) {
+            // bool toggle
+            ctx.state.player.opts[opt] = ctx.state.player.opts[opt] || 0;
+            ctx.state.player.opts[opt] = 1 - ctx.state.player.opts[opt];
+            ctx.dispatch('save');
+            return ctx.state.player.opts[opt];
+        },
+        set_option_txt(ctx, opts) {
+            [opt, txt] = opts;
         }
     },
     mutations: {
@@ -199,14 +215,14 @@ const store = new Vuex.Store({
                 inv: state.inv,
             };
             DB.setItem('save', save);
-            state.messages.push({type: 'saved', m: 'Game Saved', unique:true});
+            //state.messages.push({type: 'saved', m: 'Game Saved', unique:true});
         },
         loadsave(state, sdata) {
             console.log('loaded save', sdata.player.name);
             state.player = sdata.player;
             state.stats = sdata.stats;
             state.inv = sdata.inv;
-            state.messages.push({type: 'saveload', m:'Save loaded'});
+            //state.messages.push({type: 'saveload', m:'Save loaded'});
         },
         message(state, message) {
             if (typeof(message) === 'string') {
@@ -264,7 +280,7 @@ const store = new Vuex.Store({
                 //console.log('setting ', statkey, ' to +', info[1]);
                 state.stats.gold[statkey] += info[1];
             }
-        }
+        },
 
         
     },
@@ -359,6 +375,10 @@ const store = new Vuex.Store({
                 return _.sortBy(upsrc, u => u.cost); // also sort by name after that, and also split into locked/unlocked/owned
             }
         },
+        upgrade: state => name => {
+            let up = _.filter(state.upgrades, x => x.name == name);
+            return up.length > 0 ? up[0] : false;
+        },
         has_upgrade: state => upgrade => {
             return state.player.upgrades.includes(upgrade);
         },
@@ -412,6 +432,9 @@ const store = new Vuex.Store({
         counter: state => key => {
             return state.stats.counters[key];
         },
+
+        options: state => state.player.opts,
+        option: state => opt => state.player.opts[opt],
 
     }
 });
