@@ -122,13 +122,9 @@ const store = new Vuex.Store({
         remove_item(ctx, payload) {
             var item = payload.item; var qty = payload.qty;
             let newinv = [];
-            let maxsell = ctx.getters.sum_inv_type('invpagemultisell');
 
-            let num = ctx.getters.inv_item(item.id).length;
-            qty = Math.min(maxsell + 1, qty); // how much we're trying to remove
-            qty = Math.min(qty, num); // now bound it to their total, so we dont go over
-            qty = Math.max(qty, 1); // may as well not go negative
-            //console.log('remove_item', item, qty, num);
+            qty = ctx.getters.max_item_sell([item, qty]);
+            //console.log('remove_item', item, qty);
             // Check for negative, and max
             _.each(ctx.state.inv, (ele, idx) => {
                 if (item.id == ele.id && qty > 0) {
@@ -392,6 +388,17 @@ const store = new Vuex.Store({
             if (type == 'sell') {
 
             }
+        },
+        max_item_sell: (state, g) => obj => {
+            [item, qty] = obj;
+
+            let maxsell = g.sum_inv_type('invpagemultisell');
+
+            let num = g.inv_item(item.id).length;
+            qty = Math.min(maxsell + 1, qty); // how much we're trying to remove, but don't go over the max we're allowed to sell
+            qty = Math.min(qty, num); // now bound it to their total, so we dont sell more than we own
+            qty = Math.max(qty, 1); // may as well not go negative
+            return qty;
         },
 
         // Cheebos

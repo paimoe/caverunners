@@ -283,6 +283,8 @@ const Inventory = Vue.component('inventory', {
             }
 
             // Confirm the sell
+            // Update qty to the max
+            qty = this.$store.getters.max_item_sell([item, qty]);
             if (confirm(`Sell ${qty}x ` + item.name + '?')) {
 
                 // Add gold
@@ -361,7 +363,11 @@ const Actionmenu = Vue.component('actionmenu', {
         upgrades() {
             let ups = this.$store.getters.upgrades(false);
             // only show ones that don't end in 1
-            return _.filter(ups, u => u.cost % 10 === 0);
+            return _.filter(ups, u => u.cost % 10 === 0 && !this.owned(u.name));
+        },
+        upgrades_owned() {
+            let ups = this.$store.getters.upgrades(true);
+            return _.sortBy(ups, 'name');
         },
         messages() {
              let z = this.$store.getters.messages;
