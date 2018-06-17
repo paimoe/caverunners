@@ -291,9 +291,9 @@
             <div v-if="show()" class="pure-u-1 rundone" id="noticebar">
                 <p>Your run took {{ run.time.toFixed(2) }}s!</p>
                 <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em> gold.</p>
-                <p v-if="run.items.length > 0">You also found the following items. Click to select the ones to keep.</p>
-                <ul class="items" v-if="run.items.length > 0">
-                    <li v-for="i in run.items" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}]" v-on:click="select(i)">
+                <p v-if="runitems().length > 0">You also found the following items. Click to select the ones to keep.</p>
+                <ul class="items" v-if="runitems().length > 0">
+                    <li v-for="i in runitems()" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}]" v-on:click="select(i)">
                         {{ text(i) }}
                         <span v-if="selected(i)">&#9745;</span>
                         <span v-if="!selected(i)">&#9744;</span>

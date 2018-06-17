@@ -98,6 +98,19 @@ const Statusbar = Vue.component('statusbar', {
             // chance for item
             var newitems = [];
             //console.log('RNG', rng);
+            var newitems = ITEM_FIND({
+                area: null,
+                player: this.$store.getters.player,
+                items: this.$store.getters.items, // find a way to not have to inject this
+
+                // Number of items to return
+                itemboostnum: sum_field(this.$store.getters.upgrades(true, 'itemfind'), 'hvalue'), 
+                // Time the run took/difficulty
+                difficulty: diff,
+                time: this.time_take/1000,
+            });
+            //console.log('NEW ITEMS', newitems);
+            /*
             let itemchance = BASES.MF;
             itemchance = 101;
             if (rng < itemchance) {
@@ -110,7 +123,7 @@ const Statusbar = Vue.component('statusbar', {
                 newitems = newitems.concat(ritem);
                 //console.log('You got an item!', ritem);
                 //this.$store.commit('add_to_inventory', newitems);
-            }
+            }*/
 
             //console.log('gained', gold.toFixed(0), 'gold and', expgain.toFixed(0), 'exp!')
             this.$store.dispatch('end_run', {
@@ -162,7 +175,14 @@ const Notices = Vue.component('notices', {
         confirm_end() {
             // Add the items
             //console.log(`Adding ${this.selected_list.length} items`);
-            this.$store.commit('add_to_inventory', this.selected_list);
+            // morph list
+            let input_list = [];
+            for (i = 0; i < this.selected_list.length; i++) {
+                let item = this.selected_list[i];
+                let f = fill_array(item, item.qty);
+                input_list = input_list.concat(f);
+            }
+            this.$store.commit('add_to_inventory', input_list);
             
             this.ack_end = true;
             this.last_run = 'etc';
@@ -172,7 +192,7 @@ const Notices = Vue.component('notices', {
         },
 
         take_all() {
-            this.selected_list = this.run.items;
+            this.selected_list = this.runitems();
             this.confirm_end();
         },
 
@@ -189,10 +209,25 @@ const Notices = Vue.component('notices', {
             return _.some(this.selected_list, i => i.id == item.id);
         },
         text(item) {
+            if (item.qty > 1) {
+                return `${item.name} x${item.qty}`;
+            }
             return item.name;
         },
         has_upgrade(up) {
             return this.$store.getters.has_upgrade(up);
+        },
+        runitems() {
+            // Group it
+            let run = this.$store.getters.run.result;
+            let counts = _.countBy(run.items, i => i.id);
+            let _items = _.map(_.unique(run.items), x => {
+                //let c = counts[x.id];
+                x.qty = counts[x.id] || 1;
+                return x;
+            });
+            //console.log('counts', _items, run.items);
+            return _.sortBy(_items, x => x.rarity);
         },
     },
     computed: {
@@ -201,12 +236,17 @@ const Notices = Vue.component('notices', {
             let run = this.$store.getters.run.result;
             return run;
         },
-        runitems() {
-            // Group it
-        },
         endbutton() {
             // 
-            return `Take ${this.selected_list.length} items`;
+            // total
+            let total = _.reduce(this.selected_list, (acc, x) => {
+                return acc += x.qty;
+            }, 0);
+            let s = total > 1 ? 's' : '';
+            if (total == 0) {
+                return 'Take Nothing';
+            }
+            return `Take ${total} item${s}`;
         }
     }
 });
