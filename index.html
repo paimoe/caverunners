@@ -21,6 +21,30 @@
             display:inline;
             padding:5px 10px;
         }
+        #logo {
+            background:#39535e;
+            border-right: 1px solid #233339;
+            box-sizing: border-box;
+        }
+        input.runningbutton {
+            background-image: repeating-linear-gradient(
+                -45deg, 
+                #222,
+                #222 1rem,
+                #444 1rem,
+                #444 2rem
+                );
+            color:#fff;
+            border-radius:10px;
+            border:1px solid #222;
+            background-size:200% 200%;
+            animation: barberpole 15s linear infinite;
+        }
+        @keyframes barberpole {
+            0% {
+                background-position: 100% 100%;
+            }
+        }
         .startbutton input {
             height: 50px;
             margin:10px;
@@ -276,13 +300,13 @@
         </div>
 
         <template id="statusbar">
-            <div class="pure-g" id="top" v-bind:style="css_gradient_percent()">
-                <div class="pure-u-1-4">
+            <div class="pure-g" id="top">
+                <div class="pure-u-1-6" id="logo">
                     <h1>overburdened</h1>
                 </div>
-                <div class="pure-u-3-4">
+                <div class="pure-u-5-6" v-bind:style="css_gradient_percent()">
                     <div class="startbutton" v-cloak>
-                        <input type="button" v-bind:value="timeleft" v-bind:class="{'redbutton':over_hard_limit}" :disabled="is_running || over_hard_limit" v-on:click="run()" /> 
+                        <input type="button" v-bind:value="timeleft" v-bind:class="{'redbutton':over_hard_limit, 'runningbutton': is_running}" :disabled="is_running || over_hard_limit" v-on:click="run()" /> 
                     </div>
                 </div>
             </div>
