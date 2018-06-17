@@ -285,14 +285,13 @@ const store = new Vuex.Store({
         
     },
     getters: {
-        difficulty: state => {
+        difficulty: (state, g) => {
             var basetime = 0;
             var lev = _.find(state.levels, l => l.id == state.player.level);
             var basetime = lev.basetime;
             
-            let invweight = _.reduce(_.pluck(state.inv, 'size'), (acc, val) => acc + val, 0);
-            let mul = Math.max(1, invweight / state.player.capacity); // add overage as multiplier
-            //console.log('multiplier', mul);
+            let mul = (100 + parseFloat(g.penalty)) / 100;
+            //console.log('difficulty()', `basetime:${basetime} level:${state.player.level} mul:${mul} pen:${g.penalty}`);
             return (state.player.level + basetime) * mul;
         },
         inventory: state => state.inv,

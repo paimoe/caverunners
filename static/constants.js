@@ -82,7 +82,8 @@ function ITEM_FIND(options) {
     //_items = _.filter(_items, i => _.some([area], i.location));
 
     // Build range of all items, and rarities
-    let num_drops = Math.floor(rand_between(BASES.DROP_NUM[0], BASES.DROP_NUM[1])) + itemboostnum;
+    let boost_drops_time = Math.floor(time / 30);
+    let num_drops = Math.floor(rand_between(BASES.DROP_NUM[0], BASES.DROP_NUM[1])) + itemboostnum + boost_drops_time;
     console.log('num_drops', num_drops, 'boost=', itemboostnum);
 
     var group_probs = {

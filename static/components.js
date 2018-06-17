@@ -46,9 +46,10 @@ const Statusbar = Vue.component('statusbar', {
             let diff_range = 0.1;
             let min = diff * (1 - diff_range);
             let max = diff * (1 + diff_range);
-            //console.log('min',min,max)
 
             let runtime = rand_between(min, max) * 1000 * this.$store.getters.increased_speed;
+            //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff}`, this.$store.getters.increased_speed);
+            //runtime = 500;
             this.time = runtime;
             this.running = true;
             this.time_start = Date.now();
