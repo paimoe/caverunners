@@ -85,11 +85,22 @@ const store = new Vuex.Store({
                 return list.length > 0 && _.every(list, x => x === true);
             }
 
+            var tl;
+            var INV = ctx.getters.inventory;
             for (let ach of open) {
                 satisfied = [];
+                tl = [];
                 var min_trues = Object.keys(ach.exec).length;
 
                 // Own 'n' of these items
+                if ('own_all' in ach.exec) {
+                    // own_all: [1,2,3,4,5] -> send to below with [[1,1], [2,1], [3,1]] etc
+                    tl = [];
+
+                    _.each(ach.exe.own_all, n => {
+
+                    });
+                }
                 if ('own' in ach.exec) {
                     var true_list = [];
                     // own these specific items

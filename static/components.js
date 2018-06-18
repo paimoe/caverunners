@@ -304,10 +304,11 @@ const Charmenu = Vue.component('charmenu', {
             }
             let pl = this.$store.getters.player;
             let n = this.$store.getters.next_level;
+            let exp = pl.exp.toFixed(0);
             if (n == undefined) {
-                return pl.exp;
+                return exp;
             }
-            return `${pl.exp}/${n.exp}`;
+            return `${exp}/${n.exp}`;
         }
     },
     methods: {
