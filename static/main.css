@@ -316,3 +316,18 @@ progress.xp {
         background: purple;
     }
 }
+.iclsset {
+    /* greeno */
+    animation: iset 5s infinite alternate;
+    color:#fff;
+}
+@keyframes iset {
+    0% {
+        border: 1px solid #13cc13;
+        background: #306330;
+    }
+    100% {
+        border: 1px solid #306330;
+        background: #13cc13;
+    }
+}

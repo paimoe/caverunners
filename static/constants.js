@@ -101,7 +101,7 @@ function ITEM_FIND(options) {
         // Roll for type
         let rng = rand_between(1,100);
         var find_type = 'junk';
-        if (rng >= 99.5) {
+        if (rng >= 99) {
             // S
             //console.log('Adding S-tier',rng);
             find_type = 'S';
@@ -113,7 +113,6 @@ function ITEM_FIND(options) {
             // set
             //console.log('Adding set',rng);
             find_type = 'set';
-            find_type = 'rare';
         } else if (rng > 75) {
             // rare
             //console.log('Adding rare',rng);
@@ -135,6 +134,11 @@ function ITEM_FIND(options) {
         let pool = _.filter(_items, x => x.dropgroup == find_types[j]);
         //console.log('pool', find_type, _.pluck(pool, 'name'));
         let picked_item = _.sample(pool);
+        if (picked_item === undefined) {
+            //console.log('No item for you :(');
+            num_drops -= 1;
+            continue;
+        }
         //console.log('picked item', picked_item.name);
         let picked_count = Math.floor(rand_between(1, picked_item.dropmax));
         picked_count = Math.min(picked_count, num_drops); // bound it to num_drops, otherwise we get 10 items, but roll x5 on all, and get 50 items

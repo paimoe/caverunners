@@ -147,7 +147,7 @@
         <template id="inventory">
             <div class="pure-u-1-2" id="part-inv">
                 <div class="achievementdisplay pure-g" v-for="ach in new_achievements">
-                    <div class="pure-u-1-8 achimg"><img src="http://via.placeholder.com/96x96" /></div>
+                    <div class="pure-u-1-8 achimg"><img src="https://via.placeholder.com/96x96" /></div>
                     <div class="pure-u-3-4">
                         <h2>Achievement Unlocked!</h2>
                         <h3>&rarr; {{ ach.nice_name }}</h3>
@@ -190,7 +190,10 @@
                             <td>{{ i.type }}</td>
 
                             <td v-if="midsell(i)">{{ midsell(i) }}</td>
-                            <td v-if="!midsell(i)"><a v-on:click="sell(i)">Sell</a></td>
+                            <td v-if="!midsell(i)">
+                                <a v-on:click="sell(i)">Sell</a>
+                                <a v-if="max_multi_sell > 1" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

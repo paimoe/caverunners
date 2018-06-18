@@ -351,12 +351,23 @@ const Inventory = Vue.component('inventory', {
         has_upgrade(name) {
             return this.$store.getters.has_upgrade(name);
         },
+        do_sell(item, qty) {
+            // Add gold
+            this.$store.commit('add_gold', item.value * qty);
+            this.$store.commit('stat', ['gold_sales', item.value * qty]);
+            this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
+            this.$store.dispatch('check_achievements');
+            this.$store.dispatch('save');
+
+            // Set sell timeout
+        },
         sell(item) {
             let qty = 1;
             let base_allow = total = 1;
             let increased_allow = this.$store.getters.sum_inv_type('invpagemultisell');
+            let confirmed = false;
             //console.log('increased_allow', increased_allow);
-            if (increased_allow > 0) {
+            if (increased_allow > 0 && !confirmed) {
                 // Ask for amount to sell
                 total = base_allow + increased_allow;
                 qty = prompt(`How many do you wish to sell? Max: ${total}`, total);
@@ -371,22 +382,13 @@ const Inventory = Vue.component('inventory', {
             // Update qty to the max
             qty = this.$store.getters.max_item_sell([item, qty]);
 
-            let confirmed = false;
             if (this.$store.getters.option('confirm_sell') == 1) {
                 confirmed = confirm(`Sell ${qty}x ` + item.name + '?');
             } else {
                 confirmed = true;
             }
             if (confirmed) {
-
-                // Add gold
-                this.$store.commit('add_gold', item.value * qty);
-                this.$store.commit('stat', ['gold_sales', item.value * qty]);
-                this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
-                this.$store.dispatch('check_achievements');
-                this.$store.dispatch('save');
-
-                // Set sell timeout
+                this.do_sell(item, qty);
             }
         },
         midsell(item) {
@@ -420,6 +422,12 @@ const Inventory = Vue.component('inventory', {
                 this['sort_' + col] = sort;
             }
         },
+
+        // Some multi selling
+        sellmax(item) {
+            let max = this.$store.getters.max_item_sell([item, item.qty]);
+            this.do_sell(item, max);
+        }
     },
     computed: {
         items_list() {
@@ -469,7 +477,11 @@ const Inventory = Vue.component('inventory', {
 
         new_achievements() {
             return this.$store.getters.new_achievements;
-        }
+        },
+        max_multi_sell() {
+            let increased_allow = this.$store.getters.sum_inv_type('invpagemultisell');
+            return increased_allow + 1; // +1 for the base amount
+        },
     }
 });
 const Actionmenu = Vue.component('actionmenu', {
