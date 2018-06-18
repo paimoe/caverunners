@@ -154,7 +154,11 @@ const Statusbar = Vue.component('statusbar', {
             pc = Math.min(100, pc).toFixed(2);
             let plus5 = pc + 5;
             z = `background: linear-gradient(to right, #4F9622 0%, #4F9622 ${pc}%, #4A2E17 ${pc}%, #4A2E17 100%);`
-            return z;
+            if (this.running) {
+                return z;
+            } else {
+                return 'background: #a2753f';
+            }
         }
     }
 });
