@@ -90,8 +90,12 @@ const Statusbar = Vue.component('statusbar', {
             //console.log('gold!', gold);
 
             // Gain exp
-            var expgain = rand_between(0.5*diff, diff);
-            this.$store.commit('add_exp', expgain);
+            if (!this.$store.getters.is_max_level) {
+                var expgain = rand_between(0.5*diff, diff);
+                this.$store.commit('add_exp', expgain);
+            } else {
+                var expgain = 0;
+            }
 
             let rng = rand_between(1,100);
             // Check upgrades for item find
@@ -142,8 +146,6 @@ const Statusbar = Vue.component('statusbar', {
                 }
             });
 
-            this.$store.dispatch('check_achievements');
-
             this.$store.dispatch('save');
 
         },
@@ -192,6 +194,7 @@ const Notices = Vue.component('notices', {
             this.ack_end = true;
             this.last_run = 'etc';
             this.$store.commit('run_end');
+            this.$store.dispatch('check_achievements');
             this.$store.dispatch('save');
             this.selected_list = [];
         },
@@ -294,6 +297,17 @@ const Charmenu = Vue.component('charmenu', {
         },
         opts() {
             return this.$store.getters.options;
+        },
+        exp_display() {
+            if (this.$store.getters.is_max_level) {
+                return 'Max Level';
+            }
+            let pl = this.$store.getters.player;
+            let n = this.$store.getters.next_level;
+            if (n == undefined) {
+                return pl.exp;
+            }
+            return `${pl.exp}/${n.exp}`;
         }
     },
     methods: {

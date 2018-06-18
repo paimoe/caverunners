@@ -322,7 +322,7 @@
                 <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em> gold.</p>
                 <p v-if="runitems().length > 0">You also found the following items. Click to select the ones to keep.</p>
                 <ul class="items" v-if="runitems().length > 0">
-                    <li v-for="i in runitems()" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}]" v-on:click="select(i)">
+                    <li v-for="i in runitems()" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.dropgroup]" v-on:click="select(i)">
                         {{ text(i) }}
                         <span v-if="selected(i)">&#9745;</span>
                         <span v-if="!selected(i)">&#9744;</span>
@@ -339,7 +339,7 @@
                     <h1 v-if="!player.name" v-on:click="set_name()">[Click to set name]</h1>
                     <div class="pure-g">
                         <div class="pure-u-1-2">Experience</div>
-                        <div class="pure-u-1-2">{{ player.exp.toFixed(0) }}/{{ required_exp() }}</div>
+                        <div class="pure-u-1-2">{{ exp_display }}</div>
                     </div>
                     <!--<div class="pure-g">
                         <progress class="xp" v-bind:max="required_exp()" v-bind:value="player.exp.toFixed(0)"></progress>
@@ -363,7 +363,7 @@
                         <div class="pure-u-3-4">Gold Find</div>
                         <div class="pure-u-1-4">+{{ stats.gold_find }}%</div>
                     </div>
-                    <div class="pure-g">
+                    <div style="display:none" class="pure-g">
                         <div class="pure-u-3-4">Item Find Chance</div>
                         <div class="pure-u-1-4">{{ stats.magic_find }}%</div>
                     </div>

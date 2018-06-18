@@ -69,6 +69,9 @@ const store = new Vuex.Store({
         end_run(ctx, run) {
             // ummm, oh yeah group into qty too
             ctx.state.run = run;
+
+            //ctx.dispatch('check_achievements');
+            // check achievements when we click take/take all
         },
         check_achievements(ctx) {
             let achs = ctx.getters.achs;
@@ -76,12 +79,14 @@ const store = new Vuex.Store({
             let open = _.reject(achs, a => _.contains(ctx.state.player.achieved, a.name));
             var satisfied = [];
 
+            console.log('checking achievements');
+
             function all_true(list) {
-                return list.length > 0 && _.every(true_list, x => x === true);
+                return list.length > 0 && _.every(list, x => x === true);
             }
 
             for (let ach of open) {
-
+                satisfied = [];
                 var min_trues = Object.keys(ach.exec).length;
 
                 // Own 'n' of these items
@@ -108,6 +113,35 @@ const store = new Vuex.Store({
 
                     satisfied.push(all_true(true_list));
                 }
+
+                // Own 'n' of this group of items eg "S", "rare"
+                if ('own_group' in ach.exec) {
+                    // own these item types
+                    var true_list = [];
+                    _.each(ach.exec.own_groups, n => {
+                        //n = [type, qty]
+                        var items_count = ctx.getters.inv_group(n[0]).length; // todo: just get inv at the top, once? then filter that list
+                        true_list.push(items_count >= n[1]); // if our items len is more than required
+                    });
+
+                    satisfied.push(all_true(true_list));
+                }
+
+                // Min gold
+                if ('gold' in ach.exec) {
+                    //console.log('gold check', ach.exec, ctx.getters.player.gold, ach.exec.gold, 'current satisfied', satisfied);
+                    satisfied.push(ctx.getters.player.gold >= ach.exec.gold);
+                }
+                if ('gold_exact' in ach.exec) {
+                    satisfied.push(ctx.getters.player.gold == ach.exec.gold);
+                }
+                if ('invtotal' in ach.exec) {
+                    let val = _.reduce(ctx.getters.inventory, (acc, val) => acc + val.value, 0);
+                    satisfied.push(val >= ach.exec);
+                }
+
+
+                //console.log('ach conditions', ach.name, satisfied, all_true(satisfied), min_trues, satisfied.length, min_trues === satisfied.length)
 
                 if (all_true(satisfied) && min_trues === satisfied.length) {
                     // achieved all applicable conditions
@@ -301,6 +335,9 @@ const store = new Vuex.Store({
         inv_type: (state, g) => type => {
             return _.filter(g.inventory, i => i.type == type);
         },
+        inv_group: (state, g) => type => {
+            return _.filter(g.inventory, i => i.dropgroup == type);
+        },
         running: state => state.time.running,
         time: state => state.time.time,
         run_time: state => {
@@ -315,6 +352,7 @@ const store = new Vuex.Store({
             let lev = _.find(state.levels, l => l.id == state.player.level);
             return lev;
         },
+        is_max_level: state => state.player.level == MAX_LEVEL,
         next_level: state => {
             var nlevel = [0,0];
             var nlevel_id = state.player.level + 1;
@@ -386,6 +424,10 @@ const store = new Vuex.Store({
             let ups = getters.upgrades(true, 'speed');
             let pc_inc = sum_field(ups, 'hvalue');
             return (100 - pc_inc) / 100;
+        },
+        // If we're under 25%, return true for a slight speed boost
+        low_penalty_speed_boost: (state, g) => {
+
         },
         // Available via upgrades
         gold_find: state => {
