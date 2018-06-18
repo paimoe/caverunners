@@ -286,6 +286,10 @@
             border:1px solid #496A78;
             border-radius:5px;
         }
+
+        .sortheader {
+            cursor:pointer;
+        }
         </style>
     </head>
     <body>
@@ -449,7 +453,10 @@
                 <table class="inv pure-table">
                     <thead>
                         <tr>
-                            <td>Name</td>
+                            <td v-on:click="sort('name')" class="sortheader">
+                                Name
+                                <span v-html="sort_icon_name"></span>
+                            </td>
                             <td v-if="has_upgrade('inv_group')">Quantity</td>
                             <td>Value</td>
                             <td v-if="has_upgrade('inv_weight')">Weight</td>
@@ -562,6 +569,8 @@
                             DB.getItem('save').then(resp => {
                                 //console.log('SAVE', resp);
                                 if (resp !== null) {
+                                    //resp['player']['opts'] = {};
+                                    //console.log(resp);
                                     self.$store.commit('loadsave', resp);
                                 }
                             });
@@ -598,6 +607,9 @@
                                 self.$store.commit('add_to_inventory', item);
                                 console.log('Added', item[0].name);
                             },
+                            rm_upgrade(upg) {
+                                self.$store.state.player.upgrades = _.without(self.$store.state.player.upgrades, upg);
+                            }
                         }
 
                     }

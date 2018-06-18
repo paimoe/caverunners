@@ -154,6 +154,8 @@ function ITEM_FIND(options) {
 
     //console.log('_drop_pool', _drop_pool);
 
+    // Add possible extras; quest items, notes for quests
+
     return _drop_pool;
 };
 

@@ -317,8 +317,18 @@ const Charmenu = Vue.component('charmenu', {
 
     }
 });
+
+var unicode_arrow = which => which == 'asc' ? '&#x25BC' : '&#x25B2';
 const Inventory = Vue.component('inventory', {
     template: '#inventory',
+    data: () => ({
+        sorts: {},
+        filters: {},
+        sort_name: '',
+        sort_qty: '',
+        sort_weight: '',
+        sort_value: '',
+    }),
     methods: {
         items() {
             return this.$store.getters.inventory;
@@ -385,6 +395,16 @@ const Inventory = Vue.component('inventory', {
             this.$store.state.tmp.achievements = _.reject(this.$store.state.tmp.achievements, a => a.name == name);
             console.log('name', this.$store.state.tmp.achievements, name);
         },
+
+        sort(col) {
+            let sort = this['sort_' + col];
+            if (sort === undefined) return; // undefined
+            if (this.has_upgrade('inv_sort_' + col)) {
+                // only sort if we have the update
+                sort = sort == 'asc' ? 'desc' : 'asc';
+                this['sort_' + col] = sort;
+            }
+        },
     },
     computed: {
         items_list() {
@@ -409,14 +429,27 @@ const Inventory = Vue.component('inventory', {
             });
 
             // add sorts, filters
-            //if (this.$store.getters.)
+            if (this.has_upgrade('inv_sort_name') && this.sort_name != '') {
+                // check without upgrade too btw
+                inv = _.sortBy(inv, 'name');
+                if (this.sort_name == 'desc') {
+                    inv = inv.reverse();
+                }
+            }
             return inv;
         },
-        sorts() {
-//filtttttterssssssss
+        sorts_list() {
+            //filtttttterssssssss
+            return this.sorts;
         },
-        filters() {
+        filters_list() {
 
+        },
+        sort_icon_name() {
+            //console.log('sortz', this.sort_name)
+            if (!this.sort_name || !this.has_upgrade('inv_sort_name')) return;
+            this.sort_name = this.sort_name || 'desc';
+            return unicode_arrow(this.sort_name);
         },
 
         new_achievements() {
