@@ -36,7 +36,7 @@
         <template id="notices">
             <div v-if="show()" class="pure-u-1 rundone" id="noticebar">
                 <p>Your run took {{ run.time.toFixed(2) }}s!</p>
-                <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em> gold.</p>
+                <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em><em class="gold" v-if="run.boost.gold > 0">(+{{ run.boost.gold.toFixed(0) }})</em> gold.</p>
                 <p v-if="runitems().length > 0">You also found the following items. Click to select the ones to keep.</p>
                 <ul class="items" v-if="runitems().length > 0">
                     <li v-for="i in runitems()" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.dropgroup]" v-on:click="select(i)">
@@ -183,14 +183,14 @@
                     </thead>
                     <tbody>
                         <tr v-for="i in items_list">
-                            <td>{{ i.name }}</td>
+                            <td>{{ i.name }} <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.dropgroup]">&#x25CF;</span></td>
                             <td v-if="has_upgrade('inv_group')">{{ i.qty }}</td>
                             <td>{{ i.value }}</td>
                             <td v-if="has_upgrade('inv_weight')">{{ i.size }}</td>
                             <td>{{ i.type }}</td>
 
                             <td v-if="midsell(i)">{{ midsell(i) }}</td>
-                            <td v-if="!midsell(i)">
+                            <td v-if="!midsell(i)" class="noselect">
                                 <a v-on:click="sell(i)">Sell</a>
                                 <a v-if="max_multi_sell > 1" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
                             </td>

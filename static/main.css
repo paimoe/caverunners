@@ -331,3 +331,25 @@ progress.xp {
         background: #13cc13;
     }
 }
+
+.noselect, .noselect * {
+    user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -webkit-user-select:none;
+}
+
+
+span.dot {
+    position:relative;
+    bottom:1px;
+}
+span.dot-set {
+    color: green;
+}
+span.dot-rare {
+    color: gold;
+}
+span.dot-S {
+    color: purple;
+}

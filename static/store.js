@@ -441,8 +441,9 @@ const store = new Vuex.Store({
 
         },
         // Available via upgrades
-        gold_find: state => {
-            return 0;
+        gold_find: (state, g) => {
+            let total = g.sum_inv_type('goldfind');
+            return total;
         },
         magic_find: state => {
             return BASES.MF;

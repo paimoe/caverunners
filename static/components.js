@@ -84,9 +84,13 @@ const Statusbar = Vue.component('statusbar', {
             // Give random item, gold
             const GOLD_FACTOR = 0.1;
             let diff = this.$store.getters.difficulty;
+
+            // Gold. will return (eg) 1.05, but we aren't just applying it, we need the boost seperate
+            let goldboost = percent_to_decimal(this.$store.getters.gold_find) - 1; // 
             let gold = rand_between(diff, diff * 0.5);
-            this.$store.commit('add_gold', gold);
-            this.$store.commit('stat', ['gold_earned', gold]);
+            let moregold = gold * goldboost;
+            this.$store.commit('add_gold', gold + moregold);
+            this.$store.commit('stat', ['gold_earned', gold + moregold]);
             //console.log('gold!', gold);
 
             // Gain exp
@@ -141,7 +145,7 @@ const Statusbar = Vue.component('statusbar', {
                     'items': newitems,
                     'time': this.time_take/1000, // only used for display atm
                     'boost': {
-                        gold: 0,
+                        gold: moregold,
                     }
                 }
             });
@@ -407,6 +411,9 @@ const Inventory = Vue.component('inventory', {
                 return '?';
             }
             return this.$store.getters.inventory.length;
+        },
+        uncommon(item) {
+            return !_.contains(['junk', 'common'], item.dropgroup);
         },
         close_achievement(name) {
             this.$store.state.tmp.achievements = _.reject(this.$store.state.tmp.achievements, a => a.name == name);

@@ -52,6 +52,7 @@ function sum_field(collection, field) {
     return _.reduce(_.pluck(collection, field), (acc, val) => acc + val, 0);
 };
 var fill_array = (value, num) => Array(num).fill(value);
+var percent_to_decimal = percent => (100 + parseInt(percent)) / 100;
 
 function ITEM_FIND(options) {
     // Big mega item find function
@@ -127,7 +128,7 @@ function ITEM_FIND(options) {
     find_types = _.sortBy(find_types, t => {
         return _.indexOf(['junk', 'common', 'rare', 'set', 'unique', 'S'], t);
     });
-    console.log('find_types', find_types);
+    //console.log('find_types', find_types);
     for (j = 0; j < find_types.length; j++) {
         // Now run through the list
         //console.log('Picking item of type', find_type);
