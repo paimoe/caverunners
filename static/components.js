@@ -1,3 +1,76 @@
+
+// Maybe make into a Vue component
+class Timer {
+    //constructor(start, runtime, end, cb, periods, periods_cb) {
+    constructor(obj) {
+        this._start = obj.start;
+        this._end = obj.end; // end is the absolute truth, not runtime
+        this.runtime = obj.runtime; // maybe calculate this anyway
+        this.cb = obj.cb;
+
+        // Periodically fire off events, jsut do it roughly evenly (10% either side), and any remaining at the end
+        this.periods = obj.periods;
+        this.periods_cb = obj.periods_cb;
+
+        this._tick = obj.tick;
+        this._timer = null;
+        this._accumulate = {};
+        this._ended = false;
+    }
+    start() {
+        //let periods = this.timeleft() / this.periods; // after this many ms, run periodic cb (do later)
+        if (this._start !== undefined && this.cb !== undefined) {
+            this._timer = requestAnimationFrame(this.update.bind(this));
+            this._ended = false;
+
+            // Save to localStorage/IDB?
+        }
+    }
+    update() {
+        // Do our internal stuff, then call their cb for custom things to like update the DOM
+        if (this.timeleft() > 0) {
+            // todo: speed modifier, maybe
+
+            if (this._tick !== undefined) {
+                this._tick({ 'timeleft': this.timeleft() });
+            }
+
+            requestAnimationFrame(this.update.bind(this));
+        } else {
+            cancelAnimationFrame(this._timer);
+            this._ended = true;
+            this._tick({ 'timeleft': 0 })
+            this.end();
+        }
+    }
+    end() {
+        // Call callback and return any info
+        this.cb({
+            time_taken: this._end - this._start,
+            time_taken_s: (this._end - this._start) / 1000
+        });
+    }
+    pause() {
+
+    }
+    cancel() {
+        cancelAnimationFrame(this._timer);
+        // end run?
+    }
+    timeleft() {
+        if (this._ended === true) {
+            return 0;
+        }
+        return Math.max(0, this._end - Date.now());
+    }
+    add_stat(stat, val) {
+        this._accumulate[stat] += val;
+    }
+    running() {
+        return this.timeleft() > 0;
+    }
+};
+
 const Statusbar = Vue.component('statusbar', {
     template: '#statusbar',
     data: () => ({
@@ -55,14 +128,25 @@ const Statusbar = Vue.component('statusbar', {
             this.time_start = Date.now();
             this.time_take = runtime;
 
-            if (!this.timer) {
-                //console.log('start timer');
-                this.ack_end = false;
-
-                this.timer = requestAnimationFrame(this.update_run);
-            }
+            var t = new Timer({
+                start: this.time_start,
+                //runtime: runtime,
+                end: this.time_start + runtime,
+                cb: data => {
+                    this.end_run(data);
+                },
+                tick: tick => {
+                    //console.log('do tick', tick)
+                    this.time = tick.timeleft;
+                    // or could update the sell field, idk
+                },
+                periodic: tick => {
+                    // got a 'random' periodic ping
+                },
+            });
+            t.start();
         },
-        update_run() {
+        /*update_run() {
             var timeleft = this.time_start + this.time_take - Date.now();
             //console.log('timeleft', timeleft);
             if (timeleft > 0) {
@@ -77,9 +161,11 @@ const Statusbar = Vue.component('statusbar', {
                 this.running = false;
                 this.time = this.time_start = this.time_take = 0;
             }
-        },
-        end_run() {
-            //console.log('ended run, heres some loot');
+        },*/
+        end_run(data) {
+            console.log('ended run, heres some loot');
+
+            this.running = false;
 
             // Give random item, gold
             const GOLD_FACTOR = 0.1;
@@ -119,20 +205,6 @@ const Statusbar = Vue.component('statusbar', {
                 time: this.time_take/1000,
             });
             //console.log('NEW ITEMS', newitems);
-            /*
-            let itemchance = BASES.MF;
-            itemchance = 101;
-            if (rng < itemchance) {
-                // got an item!
-                let itembooster = sum_field(this.$store.getters.upgrades(true, 'itemfind'), 'hvalue');
-                let numnewitems = Math.floor(rand_between(1,3)) + itembooster;
-                let area = null;
-                let ritem = random_item(this.$store.getters.items, numnewitems, area);
-                //let ritem = _.sample(this.$store.getters.items);
-                newitems = newitems.concat(ritem);
-                //console.log('You got an item!', ritem);
-                //this.$store.commit('add_to_inventory', newitems);
-            }*/
 
             //console.log('gained', gold.toFixed(0), 'gold and', expgain.toFixed(0), 'exp!')
             this.$store.dispatch('end_run', {
@@ -143,7 +215,7 @@ const Statusbar = Vue.component('statusbar', {
                     'gold': gold,
                     'exp': expgain,
                     'items': newitems,
-                    'time': this.time_take/1000, // only used for display atm
+                    'time': data.time_taken_s, // only used for display atm
                     'boost': {
                         gold: moregold,
                     }
