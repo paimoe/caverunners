@@ -129,9 +129,10 @@ const store = new Vuex.Store({
                 if ('own_group' in ach.exec) {
                     // own these item types
                     var true_list = [];
-                    _.each(ach.exec.own_groups, n => {
+                    _.each(ach.exec.own_group, n => {
                         //n = [type, qty]
                         var items_count = ctx.getters.inv_group(n[0]).length; // todo: just get inv at the top, once? then filter that list
+                        console.log('in own_grou', items_count, ach.exec.own_group)
                         true_list.push(items_count >= n[1]); // if our items len is more than required
                     });
 
