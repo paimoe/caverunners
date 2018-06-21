@@ -28,8 +28,10 @@
                 </div>
                 <div class="pure-u-5-6" v-bind:style="css_gradient_percent()">
                     <div class="startbutton" v-cloak>
-                        <input type="button" v-bind:value="timeleft" v-bind:class="{'redbutton':over_hard_limit, 'runningbutton': is_running}" :disabled="is_running || over_hard_limit" v-on:click="run()" /> 
+                        <input type="button" v-bind:value="timeleft" v-bind:class="{'redbutton':over_hard_limit, 'runningbutton': is_running}" :disabled="is_running || over_hard_limit || busy" v-on:click="run()" /> 
                     </div>
+                    <div class="cancelbutton" style="display:none"></div>
+                    <div class="pausebutton" style="display:none"></div>
                 </div>
             </div>
         </template>
@@ -194,7 +196,7 @@
                             <td>{{ i.type }}</td>
 
                             <td v-show="midsell(i)" v-bind:id="'invrow-sell-' + i.id"></td>
-                            <td v-show="!midsell(i)" class="noselect">
+                            <td v-show="!midsell(i)" v-bind:class="{'noselect':1, 'busy': busy}">
                                 <a v-on:click="sell(i)">Sell</a>
                                 <a v-if="max_multi_sell > 1" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
                             </td>

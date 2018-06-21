@@ -145,12 +145,18 @@ const Statusbar = Vue.component('statusbar', {
                 if (this.$store.getters.over_hard_limit) {
                     return 'You are carrying too much! Sell some of your items.';
                 }
+                if (this.$store.getters.status == 'selling') {
+                    return 'Cannot start until you have finished selling.';
+                }
                 return 'Enter Dungeon ›';
             }
         },  
         over_hard_limit() {
             return this.$store.getters.over_hard_limit;
         },
+        busy() {
+            return this.$store.getters.status == 'selling';
+        }
     },
     methods: {
         run() {
@@ -175,6 +181,7 @@ const Statusbar = Vue.component('statusbar', {
                 end: this.time_start + runtime,
                 cb: data => {
                     this.end_run(data);
+                    this.$store.commit('set_status', null);
                 },
                 tick: tick => {
                     //console.log('do tick', tick)
@@ -187,6 +194,7 @@ const Statusbar = Vue.component('statusbar', {
             });
             this.timer.start();
             this.ack_end = false;
+            this.$store.commit('set_status', 'running');
         },
         end_run(data) {
             console.log('ended run, heres some loot');
@@ -393,6 +401,7 @@ const Charmenu = Vue.component('charmenu', {
                 magic_find: this.$store.getters.magic_find,
                 max_penalty: this.$store.getters.max_penalty,
                 achievement_count: this.$store.getters.player.achieved.length,
+                status: this.$store.getters.status,
             }
         },
         obstats() {
@@ -473,6 +482,8 @@ const Inventory = Vue.component('inventory', {
             // Set sell timeout
         },
         sell(item, opts) {
+            if (this.$store.getters.status == 'running') return;
+
             opts = opts || {};
             let qty = opts.qty || 1;
             let base_allow = total = 1;
@@ -521,28 +532,25 @@ const Inventory = Vue.component('inventory', {
                         this.selling = _.without(this.selling, item.id);
                         document.querySelector(ele).style = '';
                         this.do_sell(item, qty);
+                        // If all are finished
+                        if (this.selling.length == 0) {
+                            this.$store.commit('set_status', null);
+                        }
                     },
                     tick: tick => {
-                        //this.time = tick.timeleft;
-                        // might have to ghetto it
                         document.querySelector(ele).innerText = tick.timeleft_s.toFixed(2);
                         document.querySelector(ele).style = tick.css;
                     },
                 });
                 this.timer.start();
                 console.log('starting timer', this.timer.id())
+                this.$store.commit('set_status', 'selling');
                 this.selling.push(item.id);
             }
         },
         midsell(item) {
             // are we in the middle of selling this item?r
             return _.contains(this.selling, item.id);
-        },
-        midselltext(item) {
-            if (this.timer) {
-                return this.timer.timeleft();
-            }
-            return 'Selling';
         },
         totalvalue() {
             let inv = this.$store.getters.inventory;
@@ -634,6 +642,10 @@ const Inventory = Vue.component('inventory', {
             let increased_allow = this.$store.getters.sum_inv_type('invpagemultisell');
             return increased_allow + 1; // +1 for the base amount
         },
+
+        busy() {
+            return this.$store.getters.status == 'running';
+        }
     }
 });
 const Actionmenu = Vue.component('actionmenu', {

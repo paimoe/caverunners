@@ -353,3 +353,9 @@ span.dot-rare {
 span.dot-S {
     color: purple;
 }
+
+td.busy a {
+    /*color:#000;
+    text-decoration:none;*/
+    cursor:not-allowed;
+}

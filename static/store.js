@@ -3,6 +3,7 @@
 const store = new Vuex.Store({
     state: {
         selected: 0,
+        status: null,
         items: [],
         levels: [],
         inv: [],
@@ -328,9 +329,14 @@ const store = new Vuex.Store({
             }
         },
 
-        
+        set_status(state, status) {
+            state.status = status;
+        }
     },
     getters: {
+        status: (state, g) => {
+            return state.status;
+        },
         difficulty: (state, g) => {
             var basetime = 0;
             var lev = _.find(state.levels, l => l.id == state.player.level);
