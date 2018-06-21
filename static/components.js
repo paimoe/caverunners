@@ -200,7 +200,7 @@ const Statusbar = Vue.component('statusbar', {
             this.$store.commit('set_status', 'running');
         },
         end_run(data) {
-            console.log('ended run, heres some loot');
+            //console.log('ended run, heres some loot');
 
             this.running = false;
 
@@ -216,7 +216,6 @@ const Statusbar = Vue.component('statusbar', {
             let moregold = gold * goldboost;
             this.$store.commit('add_gold', gold + moregold);
             this.$store.commit('stat', ['gold_earned', gold + moregold]);
-            //console.log('gold!', gold);
 
             // Gain exp
             if (!this.$store.getters.is_max_level) {
@@ -226,12 +225,8 @@ const Statusbar = Vue.component('statusbar', {
                 var expgain = 0;
             }
 
-            let rng = rand_between(1,100);
-            // Check upgrades for item find
-
             // chance for item
             var newitems = [];
-            //console.log('RNG', rng);
             var newitems = ITEM_FIND({
                 area: null,
                 player: this.$store.getters.player,
@@ -471,6 +466,10 @@ const Inventory = Vue.component('inventory', {
         sort_value: '',
         selling: [],
         selltxts: {},
+
+        // maybe just sort by 1 for now?
+        sort_col: null,
+        sort_dir: null,
     }),
     methods: {
         items() {
@@ -582,12 +581,15 @@ const Inventory = Vue.component('inventory', {
         },
 
         sort(col) {
-            let sort = this['sort_' + col];
-            if (sort === undefined) return; // undefined
+            //let sort = this['sort_' + col];
+            //if (sort === undefined) return; // undefined
             if (this.has_upgrade('inv_sort_' + col)) {
-                // only sort if we have the update
-                sort = sort == 'asc' ? 'desc' : 'asc';
-                this['sort_' + col] = sort;
+                // Messy, but close enough for now. changing columns will always change direction
+                sort = this.sort_dir == 'asc' ? 'desc' : 'asc';
+                //this['sort_' + col] = sort;
+
+                this.sort_col = col;
+                this.sort_dir = sort;
             }
         },
 
@@ -658,13 +660,15 @@ const Inventory = Vue.component('inventory', {
             });
 
             // add sorts, filters
-            if (this.has_upgrade('inv_sort_name') && this.sort_name != '') {
-                // check without upgrade too btw
-                inv = _.sortBy(inv, 'name');
-                if (this.sort_name == 'desc') {
+            if (this.sort_col !== null) {
+                //console.log('sortcol', this.sort_col)
+                let sort = this.sort_col == 'weight' ? 'size' : this.sort_col;
+                inv = _.sortBy(inv, sort);
+                if (this.sort_dir == 'asc') {
                     inv = inv.reverse();
                 }
             }
+
             return inv;
         },
         sorts_list() {
@@ -675,10 +679,13 @@ const Inventory = Vue.component('inventory', {
 
         },
         sort_icon_name() {
-            //console.log('sortz', this.sort_name)
-            if (!this.sort_name || !this.has_upgrade('inv_sort_name')) return;
-            this.sort_name = this.sort_name || 'desc';
-            return unicode_arrow(this.sort_name);
+            return this.has_upgrade('inv_sort_name') && this.sort_col == 'name' ? unicode_arrow(this.sort_dir) : '';
+        },
+        sort_icon_value() {
+            return this.has_upgrade('inv_sort_value') && this.sort_col == 'value' ? unicode_arrow(this.sort_dir) : '';
+        },
+        sort_icon_weight() {
+            return this.has_upgrade('inv_sort_weight') && this.sort_col == 'weight' ? unicode_arrow(this.sort_dir) : '';
         },
 
         new_achievements() {

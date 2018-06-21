@@ -188,8 +188,14 @@
                                 Name
                                 <span v-html="sort_icon_name"></span>
                             </td>
-                            <td style="width:10%">Value</td>
-                            <td style="width:10%" v-if="has_upgrade('inv_weight')">Weight</td>
+                            <td style="width:15%" v-on:click="sort('value')" class="sortheader">
+                                Value
+                                <span v-html="sort_icon_value"></span>
+                            </td>
+                            <td style="width:15%" v-on:click="sort('weight')" class="sortheader" v-if="has_upgrade('inv_weight')">
+                                Weight
+                                <span v-html="sort_icon_weight"></span>
+                            </td>
                             <td>Type</td>
                             <td style="width:30%">Sell</td>
                         </tr>
