@@ -34,11 +34,7 @@ const store = new Vuex.Store({
             ack_end: true,
             result: {}
         },
-        timers: {
-            selling: {
-
-            },
-        },
+        timers: [],
         stats: {
             owned: {
 
@@ -164,10 +160,6 @@ const store = new Vuex.Store({
                     ctx.commit('message', {'type': 'ach', 'm': 'Achievement Unlocked!', '_meta': {a: ach}});
                 }
             }
-        },
-
-        start_timer(ctx) {
-            let timers = ctx.state.timers;
         },
 
         remove_item(ctx, payload) {
@@ -306,12 +298,6 @@ const store = new Vuex.Store({
             state.run.running = false;
         },
 
-        // Selling
-        sold_item(state) {
-            let increase = BASES.SELL_TIMER;
-            state.timers.sell = Date.now() + ((increase) * 1000); // can't sell until now+x seconds
-        },
-
         // internal stats
         count(state, key) {
             state.stats.counters[key] = state.stats.counters[key] || 0;
@@ -331,11 +317,28 @@ const store = new Vuex.Store({
 
         set_status(state, status) {
             state.status = status;
+        },
+
+        timer_add(state, timer) {
+            console.log('added timer', timer.id())
+            state.timers.push(timer);
+        },
+        timer_rm(state, timer_id) {
+            console.log('rming timer id', timer_id)
+            state.timers = _.reject(state.timers, t => t.id() == timer_id);
         }
     },
     getters: {
         status: (state, g) => {
             return state.status;
+        },
+        timers: (state, g) => id => {
+            if (id !== undefined) {
+                let f = _.filter(state.timers, t => t.id() == id);
+                return f.length > 0 ? f[0] : false;
+            } else {
+                return state.timers;
+            }
         },
         difficulty: (state, g) => {
             var basetime = 0;

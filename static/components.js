@@ -54,6 +54,7 @@ class Timer {
     end() {
         // Call callback and return any info
         this.cb({
+            id: this._id,
             time_taken: this._end - this._start,
             time_taken_s: (this._end - this._start) / 1000
         });
@@ -182,6 +183,7 @@ const Statusbar = Vue.component('statusbar', {
                 cb: data => {
                     this.end_run(data);
                     this.$store.commit('set_status', null);
+                    this.$store.commit('timer_rm', data.id)
                 },
                 tick: tick => {
                     //console.log('do tick', tick)
@@ -193,6 +195,7 @@ const Statusbar = Vue.component('statusbar', {
                 },
             });
             this.timer.start();
+            this.$store.commit('timer_add', this.timer);
             this.ack_end = false;
             this.$store.commit('set_status', 'running');
         },
@@ -233,7 +236,7 @@ const Statusbar = Vue.component('statusbar', {
                 items: this.$store.getters.items, // find a way to not have to inject this
 
                 // Number of items to return
-                itemboostnum: this.$store.getters.sum_inv_type('itemfind'), 
+                itemboostnum: this.$store.getters.sum_inv_type('itemfind'), //+100,
                 // Time the run took/difficulty
                 difficulty: diff,
                 time: data.time_taken_s, 
@@ -478,8 +481,6 @@ const Inventory = Vue.component('inventory', {
             this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
             this.$store.dispatch('check_achievements');
             this.$store.dispatch('save');
-
-            // Set sell timeout
         },
         sell(item, opts) {
             if (this.$store.getters.status == 'running') return;
@@ -521,7 +522,7 @@ const Inventory = Vue.component('inventory', {
 
                 let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc * sellspeedboost;
                 //console.log('sell pen', this.$store.getters.penalty_mul, runtime, sellpenalty10pc, sellspeedboost, BASES.SELL_SPEED * 1000 * qty)
-                
+
                 let ele = `#invrow-sell-${item.id}`;
                 this.timer = new Timer({
                     start: start,
@@ -529,9 +530,10 @@ const Inventory = Vue.component('inventory', {
                     end: start + runtime,
                     cb: data => {
                         //console.log('can sell ', item.name, ' again');
-                        this.selling = _.without(this.selling, item.id);
                         document.querySelector(ele).style = '';
+                        this.selling = _.without(this.selling, item.id);
                         this.do_sell(item, qty);
+                        this.$store.commit('timer_rm', data.id);
                         // If all are finished
                         if (this.selling.length == 0) {
                             this.$store.commit('set_status', null);
@@ -543,7 +545,8 @@ const Inventory = Vue.component('inventory', {
                     },
                 });
                 this.timer.start();
-                console.log('starting timer', this.timer.id())
+                this.$store.commit('timer_add', this.timer);
+                //console.log('starting timer', this.timer.id())
                 this.$store.commit('set_status', 'selling');
                 this.selling.push(item.id);
             }

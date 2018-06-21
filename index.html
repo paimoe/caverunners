@@ -198,7 +198,7 @@
                             <td v-show="midsell(i)" v-bind:id="'invrow-sell-' + i.id"></td>
                             <td v-show="!midsell(i)" v-bind:class="{'noselect':1, 'busy': busy}">
                                 <a v-on:click="sell(i)">Sell</a>
-                                <a v-if="max_multi_sell > 1" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
+                                <a v-if="max_multi_sell > 1 && !uncommon(i)" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
                             </td>
                         </tr>
                     </tbody>

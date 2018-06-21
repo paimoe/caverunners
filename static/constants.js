@@ -8,7 +8,6 @@ const FORMULA = {
 const BASES = {
     INV_SIZE: 60,
     MF: 30, // magic find
-    SELL_TIMER: 10,
     HARD_LIMIT: 20, // 20% penalty max
     SCRAP_RATE: 10, // 10% to get scrap
     DROP_NUM: [6, 12], // min/max number of items to drop
