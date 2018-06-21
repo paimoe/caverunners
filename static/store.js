@@ -396,6 +396,11 @@ const store = new Vuex.Store({
             } 
             return 0;
         },
+        // Return "1.25" for 25% over
+        penalty_mul: (state, g) => {
+            let p = g.penalty;
+            return (p + 100) / 100;
+        },
         max_penalty: (state, getters) => {
             let ups = getters.upgrades(true, 'maxpenalty');
             let pen_inc = sum_field(ups, 'hvalue');

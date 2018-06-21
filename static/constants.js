@@ -12,6 +12,7 @@ const BASES = {
     HARD_LIMIT: 20, // 20% penalty max
     SCRAP_RATE: 10, // 10% to get scrap
     DROP_NUM: [6, 12], // min/max number of items to drop
+    SELL_SPEED: 5, // seconds to sell
 };
 var FLAGS = [
     'cheated',

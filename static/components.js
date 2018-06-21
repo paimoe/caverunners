@@ -3,6 +3,7 @@
 class Timer {
     //constructor(start, runtime, end, cb, periods, periods_cb) {
     constructor(obj) {
+        this._id = _.uniqueId('timer_');
         this._start = obj.start;
         this._end = obj.end; // end is the absolute truth, not runtime
         this.runtime = obj.runtime; // maybe calculate this anyway
@@ -16,6 +17,13 @@ class Timer {
         this._timer = null;
         this._accumulate = {};
         this._ended = false;
+    }
+    id() {
+        return this._id;
+    }
+    new_runtime(start, end) {
+        this._start = start;
+        this._end = end;
     }
     start() {
         //let periods = this.timeleft() / this.periods; // after this many ms, run periodic cb (do later)
@@ -56,6 +64,11 @@ class Timer {
     cancel() {
         cancelAnimationFrame(this._timer);
         // end run?
+    }
+    force_quit() {
+        this._ended = true;
+        this.cancel();
+        this.end();
     }
     timeleft() {
         if (this._ended === true) {
@@ -207,10 +220,12 @@ const Statusbar = Vue.component('statusbar', {
                 items: this.$store.getters.items, // find a way to not have to inject this
 
                 // Number of items to return
-                itemboostnum: sum_field(this.$store.getters.upgrades(true, 'itemfind'), 'hvalue'), 
+                itemboostnum: this.$store.getters.sum_inv_type('itemfind') + 50, 
                 // Time the run took/difficulty
                 difficulty: diff,
-                time: data.time_taken_s,
+                time: data.time_taken_s, 
+                // @todo: to use speed boost but keep item counts, change this to the base_time. so 90s run = 3 new items, but boosted to ~70s would only give 2
+                // so use the original 90s
             });
             //console.log('NEW ITEMS', newitems);
 
@@ -480,14 +495,16 @@ const Inventory = Vue.component('inventory', {
             }
             if (confirmed) {
                 let start = Date.now()
-                let runtime = 5 * 1000 * qty;
+                let sellpenalty10pc = this.$store.getters.penalty_mul * 0.1 + 1;
+                let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc;
+                console.log('sell pen', this.$store.getters.penalty, this.$store.getters.penalty_mul, sellpenalty10pc)
                 let ele = `#invrow-sell-${item.id}`;
                 this.timer = new Timer({
                     start: start,
                     //runtime: runtime,
                     end: start + runtime,
                     cb: data => {
-                        console.log('can sell ', item.name, ' again');
+                        //console.log('can sell ', item.name, ' again');
                         this.selling = _.without(this.selling, item.id);
                         document.querySelector(ele).style = '';
                         this.do_sell(item, qty);
@@ -498,12 +515,9 @@ const Inventory = Vue.component('inventory', {
                         document.querySelector(ele).innerText = tick.timeleft_s.toFixed(2);
                         document.querySelector(ele).style = tick.css;
                     },
-                    periodic: tick => {
-                        // got a 'random' periodic ping
-                        //nothing
-                    },
                 });
                 this.timer.start();
+                console.log('starting timer', this.timer.id())
                 this.selling.push(item.id);
             }
         },
