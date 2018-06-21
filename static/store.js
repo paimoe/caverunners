@@ -436,9 +436,9 @@ const store = new Vuex.Store({
         has_upgrade: state => upgrade => {
             return state.player.upgrades.includes(upgrade);
         },
-        increased_speed: (state, getters) => {
+        increased_speed: (state, getters) => (type) => {
             let speed = 0;
-            let ups = getters.upgrades(true, 'speed');
+            let ups = getters.upgrades(true, type); // generally type either speed or sellspeed
             let pc_inc = sum_field(ups, 'hvalue');
             return (100 - pc_inc) / 100;
         },

@@ -105,6 +105,10 @@ class Timer {
             return `color:#fff;background: ${defaultbg}`;
         }
     }
+
+    save() {
+        // output json string for localstorage
+    }
 };
 
 const Statusbar = Vue.component('statusbar', {
@@ -151,12 +155,13 @@ const Statusbar = Vue.component('statusbar', {
     methods: {
         run() {
             //console.log('run dungeon');
+            // hwen loading an old run, jsut make sure that the time_start is in the past and we should start part way thorugh
             let diff = this.$store.getters.difficulty;
             let diff_range = 0.1;
             let min = diff * (1 - diff_range);
             let max = diff * (1 + diff_range);
 
-            let runtime = rand_between(min, max) * 1000 * this.$store.getters.increased_speed;
+            let runtime = rand_between(min, max) * 1000 * this.$store.getters.increased_speed('speed');
             //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff}`, this.$store.getters.increased_speed);
             //runtime = 500;
             this.time = runtime; // Use this for display
@@ -220,7 +225,7 @@ const Statusbar = Vue.component('statusbar', {
                 items: this.$store.getters.items, // find a way to not have to inject this
 
                 // Number of items to return
-                itemboostnum: this.$store.getters.sum_inv_type('itemfind') + 50, 
+                itemboostnum: this.$store.getters.sum_inv_type('itemfind'), 
                 // Time the run took/difficulty
                 difficulty: diff,
                 time: data.time_taken_s, 
@@ -382,7 +387,8 @@ const Charmenu = Vue.component('charmenu', {
         stats() {
             // compute stats
             return {
-                increased_speed: 100 - 100 * this.$store.getters.increased_speed, // convert to %
+                increased_speed: 100 - 100 * this.$store.getters.increased_speed('speed'), // convert to %
+                sell_speed: 100 - 100 * this.$store.getters.increased_speed('sellspeed'),
                 gold_find: this.$store.getters.gold_find,
                 magic_find: this.$store.getters.magic_find,
                 max_penalty: this.$store.getters.max_penalty,
@@ -495,9 +501,16 @@ const Inventory = Vue.component('inventory', {
             }
             if (confirmed) {
                 let start = Date.now()
-                let sellpenalty10pc = this.$store.getters.penalty_mul * 0.1 + 1;
-                let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc;
-                console.log('sell pen', this.$store.getters.penalty, this.$store.getters.penalty_mul, sellpenalty10pc)
+                if (this.$store.getters.penalty_mul === 1) {
+                    var sellpenalty10pc = 1;
+                } else {
+                    var sellpenalty10pc = this.$store.getters.penalty_mul * 0.1 + 1;
+                }
+                let sellspeedboost = this.$store.getters.increased_speed('sellspeed');
+
+                let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc * sellspeedboost;
+                //console.log('sell pen', this.$store.getters.penalty_mul, runtime, sellpenalty10pc, sellspeedboost, BASES.SELL_SPEED * 1000 * qty)
+                
                 let ele = `#invrow-sell-${item.id}`;
                 this.timer = new Timer({
                     start: start,
