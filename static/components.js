@@ -32,14 +32,14 @@ class Timer {
             // todo: speed modifier, maybe
 
             if (this._tick !== undefined) {
-                this._tick({ 'timeleft': this.timeleft() });
+                this._tick({ 'timeleft': this.timeleft(), 'timeleft_s': this.timeleft() / 1000, 'css': this.css_background() });
             }
 
             requestAnimationFrame(this.update.bind(this));
         } else {
             cancelAnimationFrame(this._timer);
             this._ended = true;
-            this._tick({ 'timeleft': 0 })
+            this._tick({ 'timeleft': 0 , 'timeleft_s': 0 })
             this.end();
         }
     }
@@ -68,6 +68,29 @@ class Timer {
     }
     running() {
         return this.timeleft() > 0;
+    }
+    percent_done() {
+        if (this._ended === true) {
+            return 100;
+        }
+        let timetake = this._end - this._start;
+        let pc = (Date.now() - this._start) / timetake * 100;
+        pc = Math.min(100, pc).toFixed(2);
+        return pc;
+    }
+    css_background(fgcolor, bgcolor, defaultbg) {
+        // Find a way to generalize this, pass in percent or something
+        fgcolor = fgcolor || '#4F9622';
+        bgcolor = bgcolor || '#4A2E17';
+        defaultbg = defaultbg || '#ffffff';
+        if (this.running()) {
+            let pc = this.percent_done();
+            let plus5 = pc + 5;
+            let z = `color:#fff;background: linear-gradient(to right, ${fgcolor} 0%, ${fgcolor} ${pc}%, ${bgcolor} ${pc}%, ${bgcolor} 100%);`
+            return z;
+        } else {
+            return `color:#fff;background: ${defaultbg}`;
+        }
     }
 };
 
@@ -123,12 +146,12 @@ const Statusbar = Vue.component('statusbar', {
             let runtime = rand_between(min, max) * 1000 * this.$store.getters.increased_speed;
             //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff}`, this.$store.getters.increased_speed);
             //runtime = 500;
-            this.time = runtime;
+            this.time = runtime; // Use this for display
             this.running = true;
             this.time_start = Date.now();
             this.time_take = runtime;
 
-            var t = new Timer({
+            this.timer = new Timer({
                 start: this.time_start,
                 //runtime: runtime,
                 end: this.time_start + runtime,
@@ -144,24 +167,9 @@ const Statusbar = Vue.component('statusbar', {
                     // got a 'random' periodic ping
                 },
             });
-            t.start();
+            this.timer.start();
+            this.ack_end = false;
         },
-        /*update_run() {
-            var timeleft = this.time_start + this.time_take - Date.now();
-            //console.log('timeleft', timeleft);
-            if (timeleft > 0) {
-                //this.time = Math.max(0, this.time - speed);
-                this.time = Math.max(0, timeleft);
-                requestAnimationFrame(this.update_run);
-            } else {
-                //console.log('times up!');
-                cancelAnimationFrame(this.timer);
-                this.end_run();
-                this.timer = null;
-                this.running = false;
-                this.time = this.time_start = this.time_take = 0;
-            }
-        },*/
         end_run(data) {
             console.log('ended run, heres some loot');
 
@@ -202,13 +210,13 @@ const Statusbar = Vue.component('statusbar', {
                 itemboostnum: sum_field(this.$store.getters.upgrades(true, 'itemfind'), 'hvalue'), 
                 // Time the run took/difficulty
                 difficulty: diff,
-                time: this.time_take/1000,
+                time: data.time_taken_s,
             });
             //console.log('NEW ITEMS', newitems);
 
             //console.log('gained', gold.toFixed(0), 'gold and', expgain.toFixed(0), 'exp!')
             this.$store.dispatch('end_run', {
-                running: this.running,
+                //running: this.running,
                 ack_end: this.ack_end,
                 ended: true,
                 result: {
@@ -222,17 +230,21 @@ const Statusbar = Vue.component('statusbar', {
                 }
             });
 
+            // Set status to 'returning home'
+            let time_return_home_base = data.time_taken_s / 10;
+
             this.$store.dispatch('save');
 
         },
-        css_gradient_percent() {
+        css_gradient_percent(fgcolor, bgcolor) {
             //console.log('gradien');
             // Find a way to generalize this, pass in percent or something
-            let pc = ((Date.now() - this.time_start) * 100) / ((this.time_start + this.time_take) - this.time_start);
-            pc = Math.min(100, pc).toFixed(2);
-            let plus5 = pc + 5;
-            z = `background: linear-gradient(to right, #4F9622 0%, #4F9622 ${pc}%, #4A2E17 ${pc}%, #4A2E17 100%);`
-            if (this.running) {
+            fgcolor = fgcolor || '#4F9622';
+            bgcolor = bgcolor || '#4A2E17';
+            if (this.timer) {
+                pc = this.timer.percent_done();
+                let plus5 = pc + 5;
+                z = `background: linear-gradient(to right, ${fgcolor} 0%, ${fgcolor} ${pc}%, ${bgcolor} ${pc}%, ${bgcolor} 100%);`
                 return z;
             } else {
                 return 'background: #a2753f';
@@ -419,6 +431,8 @@ const Inventory = Vue.component('inventory', {
         sort_qty: '',
         sort_weight: '',
         sort_value: '',
+        selling: [],
+        selltxts: {},
     }),
     methods: {
         items() {
@@ -437,11 +451,12 @@ const Inventory = Vue.component('inventory', {
 
             // Set sell timeout
         },
-        sell(item) {
-            let qty = 1;
+        sell(item, opts) {
+            opts = opts || {};
+            let qty = opts.qty || 1;
             let base_allow = total = 1;
             let increased_allow = this.$store.getters.sum_inv_type('invpagemultisell');
-            let confirmed = false;
+            let confirmed = opts.confirm || false;
             //console.log('increased_allow', increased_allow);
             if (increased_allow > 0 && !confirmed) {
                 // Ask for amount to sell
@@ -464,12 +479,43 @@ const Inventory = Vue.component('inventory', {
                 confirmed = true;
             }
             if (confirmed) {
-                this.do_sell(item, qty);
+                let start = Date.now()
+                let runtime = 5 * 1000 * qty;
+                let ele = `#invrow-sell-${item.id}`;
+                this.timer = new Timer({
+                    start: start,
+                    //runtime: runtime,
+                    end: start + runtime,
+                    cb: data => {
+                        console.log('can sell ', item.name, ' again');
+                        this.selling = _.without(this.selling, item.id);
+                        document.querySelector(ele).style = '';
+                        this.do_sell(item, qty);
+                    },
+                    tick: tick => {
+                        //this.time = tick.timeleft;
+                        // might have to ghetto it
+                        document.querySelector(ele).innerText = tick.timeleft_s.toFixed(2);
+                        document.querySelector(ele).style = tick.css;
+                    },
+                    periodic: tick => {
+                        // got a 'random' periodic ping
+                        //nothing
+                    },
+                });
+                this.timer.start();
+                this.selling.push(item.id);
             }
         },
         midsell(item) {
             // are we in the middle of selling this item?r
-            return false;
+            return _.contains(this.selling, item.id);
+        },
+        midselltext(item) {
+            if (this.timer) {
+                return this.timer.timeleft();
+            }
+            return 'Selling';
         },
         totalvalue() {
             let inv = this.$store.getters.inventory;
@@ -505,7 +551,7 @@ const Inventory = Vue.component('inventory', {
         // Some multi selling
         sellmax(item) {
             let max = this.$store.getters.max_item_sell([item, item.qty]);
-            this.do_sell(item, max);
+            this.sell(item, {qty: max, confirm: true});
         }
     },
     computed: {
