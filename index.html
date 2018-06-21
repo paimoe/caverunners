@@ -176,23 +176,24 @@
                 <table class="inv pure-table">
                     <thead>
                         <tr>
-                            <td v-on:click="sort('name')" class="sortheader">
+                            <td style="width:30%" v-on:click="sort('name')" class="sortheader">
                                 Name
                                 <span v-html="sort_icon_name"></span>
                             </td>
-                            <td v-if="has_upgrade('inv_group')">Quantity</td>
-                            <td>Value</td>
-                            <td v-if="has_upgrade('inv_weight')">Weight</td>
+                            <td style="width:10%">Value</td>
+                            <td style="width:10%" v-if="has_upgrade('inv_weight')">Weight</td>
                             <td>Type</td>
-                            <td>Sell</td>
+                            <td style="width:30%">Sell</td>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="i in items_list">
-                            <td>{{ i.name }} <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.dropgroup]">&#x25CF;</span></td>
-                            <td v-if="has_upgrade('inv_group')">{{ i.qty }}</td>
-                            <td>{{ i.value }}</td>
-                            <td v-if="has_upgrade('inv_weight')">{{ i.size }}</td>
+                            <td>{{ i.name }} 
+                                <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.dropgroup]">&#x25CF;</span>
+                                <span v-show="has_upgrade('inv_group') && i.qty > 1" class="pull-right">x{{ i.qty }}</span>
+                            </td>
+                            <td class="txt-right">{{ i.value }}</td>
+                            <td class="txt-right" v-show="has_upgrade('inv_weight')">{{ i.size }}</td>
                             <td>{{ i.type }}</td>
 
                             <td v-show="midsell(i)" v-bind:id="'invrow-sell-' + i.id"></td>

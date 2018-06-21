@@ -359,3 +359,10 @@ td.busy a {
     text-decoration:none;*/
     cursor:not-allowed;
 }
+
+span.pull-right {
+    float:right;
+}
+.txt-right {
+    text-align:right;
+}
