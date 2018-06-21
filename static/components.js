@@ -413,7 +413,7 @@ const Charmenu = Vue.component('charmenu', {
                 items: this.$store.getters.items.length,
                 upgrades: this.$store.getters.upgrades(false).length,
                 achs: this.$store.getters.achs.length,
-                version: 0.1,
+                version: 0.2,
             }
         },
         opts() {
