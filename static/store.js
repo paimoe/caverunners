@@ -19,6 +19,7 @@ const store = new Vuex.Store({
             opts: {
                 confirm_sell: 1, // default to confirm on
             },
+            boosts: [],
         },
 
         time: {
@@ -76,7 +77,7 @@ const store = new Vuex.Store({
             let open = _.reject(achs, a => _.contains(ctx.state.player.achieved, a.name));
             var satisfied = [];
 
-            console.log('checking achievements');
+            //console.log('checking achievements');
 
             function all_true(list) {
                 return list.length > 0 && _.every(list, x => x === true);
@@ -129,7 +130,6 @@ const store = new Vuex.Store({
                     _.each(ach.exec.own_group, n => {
                         //n = [type, qty]
                         var items_count = ctx.getters.inv_group(n[0]).length; // todo: just get inv at the top, once? then filter that list
-                        console.log('in own_grou', items_count, ach.exec.own_group)
                         true_list.push(items_count >= n[1]); // if our items len is more than required
                     });
 
@@ -191,6 +191,12 @@ const store = new Vuex.Store({
         },
         set_option_txt(ctx, opts) {
             [opt, txt] = opts;
+        },
+
+        remove_active_boosters(ctx, types) {
+            for (let t of types) {
+                ctx.state.player.boosts = _.reject(ctx.state.player.boosts, b => b.type == t);
+            }
         }
     },
     mutations: {
@@ -320,13 +326,17 @@ const store = new Vuex.Store({
         },
 
         timer_add(state, timer) {
-            console.log('added timer', timer.id())
+            //console.log('added timer', timer.id())
             state.timers.push(timer);
         },
         timer_rm(state, timer_id) {
-            console.log('rming timer id', timer_id)
+            //console.log('rming timer id', timer_id)
             state.timers = _.reject(state.timers, t => t.id() == timer_id);
-        }
+        },
+
+        add_boost(state, boost) {
+            state.player.boosts.push(boost);
+        },
     },
     getters: {
         status: (state, g) => {
@@ -503,6 +513,13 @@ const store = new Vuex.Store({
 
         options: state => state.player.opts,
         option: state => opt => state.player.opts[opt],
+
+        boosts: state => state.player.boosts,
+        boost_active: state => type => _.filter(state.player.boosts, b => b.type == type).length > 0,
+        boost_active_value: (state, g) => type => {
+            if (!g.boost_active(type)) return 0;
+            return _.filter(state.player.boosts, b => b.type == type)[0].pvalue;
+        },
 
     }
 });

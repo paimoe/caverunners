@@ -331,6 +331,20 @@ progress.xp {
         background: #13cc13;
     }
 }
+.iclsboost {
+    animation: iboost 5s infinite alternate;
+    color:#fff;
+}
+@keyframes iboost {
+    0% {
+        border: 1px solid  #5dadf3;
+        background: #37aeae;
+    }
+    100% {
+        border: 1px solid #37aeae;
+        background: #5dadf3;
+    }
+}
 
 .noselect, .noselect * {
     user-select:none;
@@ -352,6 +366,9 @@ span.dot-rare {
 }
 span.dot-S {
     color: purple;
+}
+span.dot-boost {
+    color: #37aeae;
 }
 
 td.busy a {

@@ -209,7 +209,9 @@ const Statusbar = Vue.component('statusbar', {
             let diff = this.$store.getters.difficulty;
 
             // Gold. will return (eg) 1.05, but we aren't just applying it, we need the boost seperate
-            let goldboost = percent_to_decimal(this.$store.getters.gold_find) - 1; // 
+            let booster_goldfind = this.$store.getters.boost_active_value('boostgold'); // see if boost is active
+            let goldboost = percent_to_decimal(this.$store.getters.gold_find + booster_goldfind) - 1; // 
+
             let gold = rand_between(diff, diff * 0.5);
             let moregold = gold * goldboost;
             this.$store.commit('add_gold', gold + moregold);
@@ -243,9 +245,7 @@ const Statusbar = Vue.component('statusbar', {
                 // @todo: to use speed boost but keep item counts, change this to the base_time. so 90s run = 3 new items, but boosted to ~70s would only give 2
                 // so use the original 90s
             });
-            //console.log('NEW ITEMS', newitems);
 
-            //console.log('gained', gold.toFixed(0), 'gold and', expgain.toFixed(0), 'exp!')
             this.$store.dispatch('end_run', {
                 //running: this.running,
                 ack_end: this.ack_end,
@@ -263,6 +263,8 @@ const Statusbar = Vue.component('statusbar', {
 
             // Set status to 'returning home'
             let time_return_home_base = data.time_taken_s / 10;
+
+            this.$store.dispatch('remove_active_boosters', ['boostgold']);
 
             this.$store.dispatch('save');
 
@@ -430,6 +432,9 @@ const Charmenu = Vue.component('charmenu', {
                 return exp;
             }
             return `${exp}/${n.exp}`;
+        },
+        boosts() {
+            return this.$store.getters.boosts;
         }
     },
     methods: {
@@ -483,7 +488,7 @@ const Inventory = Vue.component('inventory', {
             this.$store.dispatch('save');
         },
         sell(item, opts) {
-            if (this.$store.getters.status == 'running') return;
+            if (this.$store.getters.status == 'running' || !this.sellable(item)) return;
 
             opts = opts || {};
             let qty = opts.qty || 1;
@@ -573,7 +578,7 @@ const Inventory = Vue.component('inventory', {
         },
         close_achievement(name) {
             this.$store.state.tmp.achievements = _.reject(this.$store.state.tmp.achievements, a => a.name == name);
-            console.log('name', this.$store.state.tmp.achievements, name);
+            //console.log('name', this.$store.state.tmp.achievements, name);
         },
 
         sort(col) {
@@ -586,10 +591,48 @@ const Inventory = Vue.component('inventory', {
             }
         },
 
+        use(item) {
+            if (confirm(`Do you want to use a ${item.name}?`)) {
+                if (item.dropgroup == 'boost') {
+                    // boostgold, boostspeed, boostsell
+                    // Make sure we haven't already set one (for now, multiple later)
+                    if (this.$store.getters.boost_active(item.type)) {
+                        //console.log('already active');
+                        alert('Boost type is already active');
+                    } else {
+                        //console.log('Activating');
+                        this.$store.commit('add_boost', item);
+                        this.$store.dispatch('remove_item', {item: item, qty: 1});
+                        this.$store.dispatch('save');
+                    }
+                }
+            }
+        },
+        usable(item) {
+            //return false;
+            /*if (this.$store.has_upgrade('use_boosts')) {
+                return 'boost' == item.dropgroup;
+            }*/
+            switch(item.dropgroup) {
+                case 'boost':
+                    return this.$store.getters.has_upgrade('use_boosts');
+                    break;
+                case 'quest':
+                    return true;
+                    break;
+                default:
+                    return false;
+            }
+            //return _.contains(['boost', 'quest'], item.dropgroup);
+        },
+
         // Some multi selling
         sellmax(item) {
             let max = this.$store.getters.max_item_sell([item, item.qty]);
             this.sell(item, {qty: max, confirm: true});
+        },
+        sellable(item) {
+            return !_.contains(['boost', 'S'], item.dropgroup);
         }
     },
     computed: {

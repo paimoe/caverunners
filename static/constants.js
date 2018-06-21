@@ -1,4 +1,4 @@
-const MAX_LEVEL = 10;
+const MAX_LEVEL = 15;
 const INV_BASE = 60;
 const FORMULA = {
     time: diff => {
@@ -107,13 +107,13 @@ function ITEM_FIND(options) {
             //console.log('Adding S-tier',rng);
             find_type = 'S';
         } else if (rng > 97) {
-            // unique
-            //console.log('Adding unique',rng);
-            find_type = 'unique'; find_type = 'rare'; // bump down for now
-        } else if (rng > 90) {
             // set
+            //console.log('Adding unique',rng);
+            find_type = 'set'; 
+        } else if (rng > 90) {
+            // boost
             //console.log('Adding set',rng);
-            find_type = 'set';
+            find_type = 'boost';
         } else if (rng > 75) {
             // rare
             //console.log('Adding rare',rng);
@@ -126,7 +126,7 @@ function ITEM_FIND(options) {
         find_types.push(find_type);
     }
     find_types = _.sortBy(find_types, t => {
-        return _.indexOf(['junk', 'common', 'rare', 'set', 'unique', 'S'], t);
+        return _.indexOf(['junk', 'common', 'rare', 'boost', 'set', 'S'], t);
     });
     //console.log('find_types', find_types);
     for (j = 0; j < find_types.length; j++) {
