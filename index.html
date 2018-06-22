@@ -106,6 +106,9 @@
                         <div class="pure-u-3-4">{{ b.name }}</div>
                         <div class="pure-u-1-4">+{{ b.pvalue }}%</div>
                     </div>
+                    <div class="pure-g" v-if="boosts.length == 0">
+                        <div class="pure-u" style="font-size:90%;color:#ccc">No Boosts active</div>
+                    </div>
                 </div>
 
                 <div class="gamestuff">
@@ -236,7 +239,7 @@
 
             const routes = [
                 { path: '/', component: Inventory, name: 'inventory' },
-                { path: '/store', component: Inventory, name: 'store' }
+                //{ path: '/itempage/:id', component: Itempage, name: 'itempage' }
             ];
 
             const router = new VueRouter({

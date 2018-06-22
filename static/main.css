@@ -383,3 +383,28 @@ span.pull-right {
 .txt-right {
     text-align:right;
 }
+
+#part-itempage {
+    background: #ccc;
+}
+#part-itempage .back {
+
+    
+}
+#part-itempage .back .startbutton input {
+    background: #496A78;
+    color: #fff;
+    border-radius: 5px;
+    padding:10px;
+    border: 1px solid #39535e;
+    height:40px;
+}
+/*#part-itempage .back .startbutton input a*/
+.sidebar-blank {
+    
+    background:#E0C7A8;
+    min-height: calc(100% - 70px);
+    background: linear-gradient(#a2753f, #E0C7A8 30%, #E0C7A8 100%);
+    border: 1px solid #E0C7A8;
+    box-sizing: border-box;
+}

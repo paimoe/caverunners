@@ -375,6 +375,7 @@ const store = new Vuex.Store({
             // Base time for runs, affected by upgrades
         },
         items: state => state.items,
+        item: state => id => _.findWhere(state.items, x => x.id == id),
         player: state => state.player,
         levels: state => state.levels,
         messages: state => state.messages,
@@ -455,11 +456,15 @@ const store = new Vuex.Store({
         has_upgrade: state => upgrade => {
             return state.player.upgrades.includes(upgrade);
         },
-        increased_speed: (state, getters) => (type) => {
+        increased_speed: (state, g) => (type) => {
             let speed = 0;
-            let ups = getters.upgrades(true, type); // generally type either speed or sellspeed
+            let ups = g.upgrades(true, type); // generally type either speed or sellspeed
             let pc_inc = sum_field(ups, 'hvalue');
-            return (100 - pc_inc) / 100;
+
+            // Check current boost            
+            let boost = g.boost_active_value(`boost${type}`); // see if boost is active
+            //boost = 0;
+            return percent_to_decimal(pc_inc + boost);
         },
         // If we're under 25%, return true for a slight speed boost
         low_penalty_speed_boost: (state, g) => {

@@ -53,6 +53,10 @@ function sum_field(collection, field) {
 };
 var fill_array = (value, num) => Array(num).fill(value);
 var percent_to_decimal = percent => (100 + parseInt(percent)) / 100;
+var decimal_to_percent = dec => ((dec - 1) * 100).toFixed(0);
+
+// 1.06 => 0.94, convert our increase to the amount we multiply by to decrease
+var flip_increase = dec => (Math.max(0, 100 - (dec * 100 - 100)) / 100).toFixed(2);
 
 function ITEM_FIND(options) {
     // Big mega item find function
@@ -86,7 +90,7 @@ function ITEM_FIND(options) {
     let boost_drops_time = Math.floor(time / 30);
     let num_drops_base = Math.floor(rand_between(BASES.DROP_NUM[0], BASES.DROP_NUM[1]));
     let num_drops = num_drops_base + itemboostnum + boost_drops_time + level;
-    console.log(`num_drops_base:${num_drops_base} boost:${itemboostnum} timeboost:${boost_drops_time}`);
+    console.log(`num_drops_base:${num_drops_base} boost:${itemboostnum} timeboost:${boost_drops_time} level:${level} total:${num_drops}`);
 
     var group_probs = {
         'common': 60,

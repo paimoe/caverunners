@@ -168,8 +168,9 @@ const Statusbar = Vue.component('statusbar', {
             let min = diff * (1 - diff_range);
             let max = diff * (1 + diff_range);
 
-            let runtime = rand_between(min, max) * 1000 * this.$store.getters.increased_speed('speed');
-            //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff}`, this.$store.getters.increased_speed);
+            let inc = this.$store.getters.increased_speed('speed');
+            let runtime = rand_between(min, max) * 1000 * flip_increase(inc);
+            console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff} inc:${inc} flip:${flip_increase(inc)}`);
             //runtime = 500;
             this.time = runtime; // Use this for display
             this.running = true;
@@ -259,7 +260,7 @@ const Statusbar = Vue.component('statusbar', {
             // Set status to 'returning home'
             let time_return_home_base = data.time_taken_s / 10;
 
-            this.$store.dispatch('remove_active_boosters', ['boostgold']);
+            this.$store.dispatch('remove_active_boosters', ['boostgold', 'boostspeed']);
 
             this.$store.dispatch('save');
 
@@ -395,8 +396,8 @@ const Charmenu = Vue.component('charmenu', {
         stats() {
             // compute stats
             return {
-                increased_speed: 100 - 100 * this.$store.getters.increased_speed('speed'), // convert to %
-                sell_speed: 100 - 100 * this.$store.getters.increased_speed('sellspeed'),
+                increased_speed: decimal_to_percent(this.$store.getters.increased_speed('speed')), // convert to %
+                sell_speed: decimal_to_percent(this.$store.getters.increased_speed('sellspeed')),
                 gold_find: this.$store.getters.gold_find,
                 magic_find: this.$store.getters.magic_find,
                 max_penalty: this.$store.getters.max_penalty,
@@ -557,6 +558,7 @@ const Inventory = Vue.component('inventory', {
         },
         midsell(item) {
             // are we in the middle of selling this item?r
+            if (item === undefined) return this.selling.length > 0;
             return _.contains(this.selling, item.id);
         },
         totalvalue() {
