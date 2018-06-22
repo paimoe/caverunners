@@ -58,6 +58,13 @@ var decimal_to_percent = dec => ((dec - 1) * 100).toFixed(0);
 // 1.06 => 0.94, convert our increase to the amount we multiply by to decrease
 var flip_increase = dec => (Math.max(0, 100 - (dec * 100 - 100)) / 100).toFixed(2);
 
+function all_true(list) {
+    return all_equal(list, true);
+}
+function all_equal(list, cmp) {
+    return list.length > 0 && _.every(list, x => x === cmp);
+}
+
 function ITEM_FIND(options) {
     // Big mega item find function
     /*

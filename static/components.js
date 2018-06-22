@@ -698,7 +698,22 @@ const Inventory = Vue.component('inventory', {
         },
         sellable(item) {
             return !_.contains(['boost', 'S'], item.dropgroup);
-        }
+        },
+
+        // Sell junk
+        sell_max_junk() {
+            let junk = _.groupBy(_.filter(this.items(), i => i.type == 'junk'), 'id');
+            // Don't let it run if we're currently selling
+            if (this.$store.getters.status == 'selling') {
+                alert('Cannot start while selling');
+                return;
+            }
+            _.each(junk, itemgrp => {
+                let item = itemgrp[0];
+                //console.log('selling _each', item.name, this.num_junk_autosell);
+                this.sell(item, {qty: this.num_junk_autosell, confirm:true});
+            });
+        },
     },
     computed: {
         items_list() {
@@ -761,6 +776,11 @@ const Inventory = Vue.component('inventory', {
 
         busy() {
             return this.$store.getters.status == 'running';
+        },
+        num_junk_autosell() {
+            let allowed = this.$store.getters.sum_inv_type('invpageselljunk');
+            return allowed;
+            //return _.filter(this.items(), i => i.type == 'junk').length;
         }
     }
 });
@@ -783,6 +803,11 @@ const Actionmenu = Vue.component('actionmenu', {
     },
     methods: {
         owned(name) {
+            if (_.contains(name, ',')) {
+                var total = _.map(name.split(','), e => this.$store.getters.has_upgrade(e));
+                return all_equal(total, true);
+                //console.log('contains!', name.split(','))
+            }
             return this.$store.getters.has_upgrade(name);
         },
         toomuch(up) {
@@ -798,6 +823,7 @@ const Actionmenu = Vue.component('actionmenu', {
                 console.log('Already owned');
                 return;
             };
+            // Also check requirements here
             if (pl.gold >= up.cost) {
                 this.$store.commit('add_gold', -up.cost);
                 this.$store.commit('add_upgrade', up.name);
@@ -818,13 +844,26 @@ const Actionmenu = Vue.component('actionmenu', {
 
             // See what it requires
             let ups = this.$store.getters.upgrade(up.requires);
-            if (ups !== false && !this.owned(ups.name)) {
-                return `(requires: ${ups.nice_name})`;
+            //console.log('inv req', up.requires);
+            if (up.requires == 'selljunk1,inv') {
+                //console.log('ups', ups, up.nice_name)
+            }
+            if (up.requires != false && !this.owned(up.requires)) {
+                let list = this.list_of_reqs(up.requires);
+                // format requirements a bit nicer, cross out ones we have
+                return `(req: ${list})`;
             }
             return '';
         },
         done_requirements(up) {
             return (up.requires != false && this.owned(up.requires)) || up.requires == false;
         },
+        list_of_reqs(reqs) {
+            if (reqs) {
+                let ups = _.map(reqs.split(','), e => this.$store.getters.upgrade(e).nice_name);
+                //console.log('listyo', ups, reqs)
+                return ups;
+            }
+        }
     }
 });

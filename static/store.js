@@ -79,10 +79,6 @@ const store = new Vuex.Store({
 
             //console.log('checking achievements');
 
-            function all_true(list) {
-                return list.length > 0 && _.every(list, x => x === true);
-            }
-
             var tl;
             var INV = ctx.getters.inventory;
             for (let ach of open) {
