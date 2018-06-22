@@ -197,6 +197,12 @@ const store = new Vuex.Store({
             for (let t of types) {
                 ctx.state.player.boosts = _.reject(ctx.state.player.boosts, b => b.type == t);
             }
+        },
+
+        start_queued_timers(ctx, type) {
+            _.each(_.filter(ctx.state.timers, t => t.tag() == type), (timer) => {
+                timer.start();
+            });
         }
     },
     mutations: {

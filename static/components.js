@@ -1,5 +1,6 @@
 
 // Maybe make into a Vue component
+// Needs either start + end, start + runtime, or queued + runtime
 class Timer {
     //constructor(start, runtime, end, cb, periods, periods_cb) {
     constructor(obj) {
@@ -8,6 +9,23 @@ class Timer {
         this._end = obj.end; // end is the absolute truth, not runtime
         this.runtime = obj.runtime; // maybe calculate this anyway
         this.cb = obj.cb;
+        this._queue = obj.queue || false;
+        this._tag = obj.tag;
+        //this.boosts = obj.boosts;
+
+        this._cb_start = obj.onStart || function() {};
+
+        if (!this.runtime) {
+            if (!this._end) {
+                console.error('No Runtime or End set');
+            }
+        } else {
+            if (!this._queue) {
+                this._end = this._start + this.runtime;
+            } else {
+                // has runtime, and is queued
+            }
+        }
 
         // Periodically fire off events, jsut do it roughly evenly (10% either side), and any remaining at the end
         this.periods = obj.periods;
@@ -21,13 +39,33 @@ class Timer {
     id() {
         return this._id;
     }
+    tag() {
+        return this._tag;
+    }
     new_runtime(start, end) {
         this._start = start;
         this._end = end;
     }
+    queue() {
+        this._queue = true;
+        // Send one tick?
+        this._tick(this.tickdata());
+        //return this.queue;
+    }
     start() {
         //let periods = this.timeleft() / this.periods; // after this many ms, run periodic cb (do later)
+        if (this._queue) {
+            if (!this.runtime) {
+                console.error('Timer queued, but no runtime set');
+            }
+            this._start = Date.now();
+            this._end = this._start + this.runtime;
+            this._queue = false;
+            this._tick(this.tickdata());
+        }
         if (this._start !== undefined && this.cb !== undefined) {
+            //alert('Starting timer');
+            this._cb_start();
             this._timer = requestAnimationFrame(this.update.bind(this));
             this._ended = false;
 
@@ -40,14 +78,14 @@ class Timer {
             // todo: speed modifier, maybe
 
             if (this._tick !== undefined) {
-                this._tick({ 'timeleft': this.timeleft(), 'timeleft_s': this.timeleft() / 1000, 'css': this.css_background() });
+                this._tick(this.tickdata());
             }
 
             requestAnimationFrame(this.update.bind(this));
         } else {
             cancelAnimationFrame(this._timer);
             this._ended = true;
-            this._tick({ 'timeleft': 0 , 'timeleft_s': 0 })
+            this._tick(this.tickdata())
             this.end();
         }
     }
@@ -65,6 +103,14 @@ class Timer {
     cancel() {
         cancelAnimationFrame(this._timer);
         // end run?
+    }
+    tickdata() {
+        return {
+            timeleft: this.timeleft(),
+            timeleft_s: this.timeleft() / 1000,
+            css: this.css_background(),
+            queued: this._queue
+        }
     }
     force_quit() {
         this._ended = true;
@@ -181,6 +227,7 @@ const Statusbar = Vue.component('statusbar', {
                 start: this.time_start,
                 //runtime: runtime,
                 end: this.time_start + runtime,
+                tag: 'run',
                 cb: data => {
                     this.end_run(data);
                     this.$store.commit('set_status', null);
@@ -314,6 +361,8 @@ const Notices = Vue.component('notices', {
             this.$store.dispatch('check_achievements');
             this.$store.dispatch('save');
             this.selected_list = [];
+
+            this.$store.dispatch('start_queued_timers', 'sell');
         },
 
         take_all() {
@@ -488,7 +537,8 @@ const Inventory = Vue.component('inventory', {
             this.$store.dispatch('save');
         },
         sell(item, opts) {
-            if (this.$store.getters.status == 'running' || !this.sellable(item)) return;
+            if (!this.sellable(item)) return;
+            if (this.busy && !this.has_upgrade('queue_sell')) return;
 
             opts = opts || {};
             let qty = opts.qty || 1;
@@ -531,8 +581,9 @@ const Inventory = Vue.component('inventory', {
                 let ele = `#invrow-sell-${item.id}`;
                 this.timer = new Timer({
                     start: start,
-                    //runtime: runtime,
+                    runtime: runtime,
                     end: start + runtime,
+                    tag: 'sell',
                     cb: data => {
                         //console.log('can sell ', item.name, ' again');
                         document.querySelector(ele).style = '';
@@ -544,15 +595,25 @@ const Inventory = Vue.component('inventory', {
                             this.$store.commit('set_status', null);
                         }
                     },
-                    tick: tick => {
-                        document.querySelector(ele).innerText = tick.timeleft_s.toFixed(2);
-                        document.querySelector(ele).style = tick.css;
+                    tick: function(tick) {
+                        if (!tick.queued) {
+                            document.querySelector(ele).innerText = tick.timeleft_s.toFixed(2);
+                            document.querySelector(ele).style = tick.css;
+                        } else {
+                            document.querySelector(ele).innerText = 'Queued';
+                        }
                     },
+                    onStart: () => {
+                        this.$store.commit('set_status', 'selling');
+                    }
                 });
-                this.timer.start();
+                if (this.busy) {
+                    this.timer.queue();
+                } else {
+                    this.timer.start();
+                    //console.log('starting timer', this.timer.id())
+                }
                 this.$store.commit('timer_add', this.timer);
-                //console.log('starting timer', this.timer.id())
-                this.$store.commit('set_status', 'selling');
                 this.selling.push(item.id);
             }
         },

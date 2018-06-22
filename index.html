@@ -152,7 +152,7 @@
                     </div>
                 </div>
                 <div class="upgrades nicetable">
-                    <h1><span>Purchased Upgrades</span></h1>
+                    <h1><span>Purchased Upgrades ({{ upgrades_owned.length }})</span></h1>
                     <div v-for="(u, name) in upgrades_owned" v-bind:class="{'owned': owned(u.name), 'pure-g': 1}">
                         <div class="pure-u">
                             <p class="upgrade-name">{{ u.nice_name }} <small style="color:#888">{{ u.description }}</small></p>
@@ -205,7 +205,8 @@
                     </thead>
                     <tbody>
                         <tr v-for="i in items_list">
-                            <td>{{ i.name }} 
+                            <!--<td v-bind:class="{'busy': midsell()}"><router-link :to="{name: 'itempage', params: {id: i.id}}">{{ i.name }}</router-link>-->
+                            <td>{{ i.name }}
                                 <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.dropgroup]">&#x25CF;</span>
                                 <span v-show="has_upgrade('inv_group') && i.qty > 1" style="color:#ddd" class="pull-right">x{{ i.qty }}</span>
                             </td>
@@ -214,7 +215,7 @@
                             <td>{{ i.type }}</td>
 
                             <td v-show="midsell(i)" v-bind:id="'invrow-sell-' + i.id"></td>
-                            <td v-show="!midsell(i)" v-bind:class="{'noselect':1, 'busy': busy}">
+                            <td v-show="!midsell(i)" v-bind:class="{'noselect':1, 'busy': busy && !has_upgrade('queue_sell')}">
                                 <a v-on:click="sell(i)" v-show="sellable(i)">Sell</a>
                                 <a v-if="max_multi_sell > 1 && !uncommon(i) && sellable(i)" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
                                 <a v-if="usable(i)" v-on:click="use(i)">Use</a>
