@@ -16,8 +16,12 @@
 
             <div class="pure-g main">
                 <charmenu></charmenu>
-                <inventory></inventory>
-                <actionmenu></actionmenu>
+                <keep-alive>
+                    <router-view></router-view>
+                </keep-alive>
+                <!--<inventory></inventory>-->
+                <actionmenu v-if="$route.name == 'inventory'"></actionmenu>
+                <div v-if="$route.name != 'inventory'" class="pure-u-1-3 sidebar-blank">&nbsp;</div>
             </div>
         </div>
 
@@ -122,7 +126,7 @@
                 <div class="gamestuff">
                     <p>{{ obstats.update }}</p>
                     <p>{{ obstats.items }} items, {{ obstats.upgrades }} upgrades, {{ obstats.achs }} achievements</p>
-                    <p>Version: {{ obstats.version }}</p>
+                    <p>Version: {{ obstats.version }} <a href="#" v-on:click="show_debug = 1" style="color:#fff">[debug]</a></p>
                 </div>
 
                 <div class="credits">
@@ -234,6 +238,20 @@
             </div>
         </template>
 
+        <template id="itempage">
+                <div class="pure-u-1-2" id="part-itempage">
+                    <div class="back">
+                        <router-link to="/" style="text-decoration:none">
+                            <div class="startbutton">
+                                <input type="button" value="Back to Inventory" />
+                            </div>
+                        </router-link>
+                    </div>
+                    <h1>{{ item.name }}</h1>
+                    <h2>{{ item.description }}</h2>
+                </div>
+        </template>
+
         <script src="/node_modules/vue/dist/vue.min.js"></script>
         <script src="node_modules/vuex/dist/vuex.min.js"></script>
         <script src="/node_modules/vue-router/dist/vue-router.min.js"></script>
@@ -285,7 +303,7 @@
                         });
                     },
                     init() {
-                        console.log('init');
+                        //console.log('init');
                         var self = this;
 
                         // Load data, store in idb

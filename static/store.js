@@ -4,6 +4,7 @@ const store = new Vuex.Store({
     state: {
         selected: 0,
         status: null,
+        page: 'inventory',
         items: [],
         levels: [],
         inv: [],
@@ -87,11 +88,13 @@ const store = new Vuex.Store({
                 var min_trues = Object.keys(ach.exec).length;
 
                 // Own 'n' of these items
-                if ('own_all' in ach.exec) {
+                if ('own_all' in ach.exec || 'any_of_each' in ach.exec) { // or 'any_of_each' ?
                     // own_all: [1,2,3,4,5] -> send to below with [[1,1], [2,1], [3,1]] etc
                     tl = [];
 
-                    _.each(ach.exe.own_all, n => {
+                    let listing = ach.exec.own_all !== undefined ? ach.exec.own_all : ach.exec.any_of_each;
+
+                    _.each(listing, n => {
 
                     });
                 }
@@ -150,6 +153,9 @@ const store = new Vuex.Store({
                 }
                 if ('flag' in ach.exec) {
 
+                }
+                if ('invcount' in ach.exec) {
+                    satisfied.push(ctx.getters.inventory.length >= ach.exec.invcount);
                 }
 
 

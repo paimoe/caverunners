@@ -216,8 +216,8 @@ const Statusbar = Vue.component('statusbar', {
 
             let inc = this.$store.getters.increased_speed('speed');
             let runtime = rand_between(min, max) * 1000 * flip_increase(inc);
-            console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff} inc:${inc} flip:${flip_increase(inc)}`);
-            //runtime = 500;
+            //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff} inc:${inc} flip:${flip_increase(inc)}`);
+            //runtime = 5000;
             this.time = runtime; // Use this for display
             this.running = true;
             this.time_start = Date.now();
@@ -522,6 +522,15 @@ const Inventory = Vue.component('inventory', {
         sort_col: null,
         sort_dir: null,
     }),
+    beforeRouteLeave(to, from, next) {
+        if (this.selling.length > 0) {
+            // can't nav yet until we're sold
+            //console.log('NOT YET')
+            next(false);
+        } else {
+            next();
+        }
+    },
     methods: {
         items() {
             return this.$store.getters.inventory;
@@ -872,3 +881,32 @@ const Actionmenu = Vue.component('actionmenu', {
         }
     }
 });
+/*
+const Itempage = Vue.component('itempage', {
+    template: '#itempage',
+    data: () => ({
+        is: false,
+    }),
+    created() {
+        this.is = true;
+    },
+    computed: {
+        item() {
+            //console.log(this.$route)
+            //if (this.is) {
+                console.log('called', this.$route.params.id, this.$parent.loaded)
+            let pid = this.$route.params.id;
+            let item = this.$store.getters.item(pid);
+            console.log('item', item.name);
+            return item;/*
+                if (this.$route.params.id && this.$parent.loaded) {
+                    return this.$store.state.items[this.$route.params.id - 1];
+                }
+                return {};
+            //}
+        },
+        loaded() {
+            return this.$parent.loaded;
+        }
+    }
+});*/

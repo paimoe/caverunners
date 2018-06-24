@@ -172,6 +172,9 @@ function ITEM_FIND(options) {
     //console.log('_drop_pool', _drop_pool);
 
     // Add possible extras; quest items, notes for quests
+    //S = _.filter(_items, x => x.dropgroup == 'boost')[0]
+    //console.log('SSSSS', S)
+    //_drop_pool.push(S)
 
     return _drop_pool;
 };
