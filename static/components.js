@@ -1,6 +1,6 @@
 
 // Maybe make into a Vue component
-// Needs either start + end, start + runtime, or queued + runtime
+// Needs either start + end, start + runtime, or queued + runtime, or runtime + autorun
 class Timer {
     //constructor(start, runtime, end, cb, periods, periods_cb) {
     constructor(obj) {
@@ -11,6 +11,7 @@ class Timer {
         this.cb = obj.cb;
         this._queue = obj.queue || false;
         this._tag = obj.tag;
+        this.autorun = obj.autorun || false;
         //this.boosts = obj.boosts;
 
         this._cb_start = obj.onStart || function() {};
@@ -63,6 +64,11 @@ class Timer {
             this._queue = false;
             this._tick(this.tickdata());
         }
+        if (this.autorun) {
+            this._start = Date.now();
+            this._end = this._start + this.runtime;
+            this._tick(this.tickdata());
+        }
         if (this._start !== undefined && this.cb !== undefined) {
             //alert('Starting timer');
             this._cb_start();
@@ -81,12 +87,19 @@ class Timer {
                 this._tick(this.tickdata());
             }
 
-            requestAnimationFrame(this.update.bind(this));
+            this._timer = requestAnimationFrame(this.update.bind(this));
         } else {
-            cancelAnimationFrame(this._timer);
-            this._ended = true;
-            this._tick(this.tickdata())
-            this.end();
+            if (this.autorun) {
+                // restart
+                this._tick(this.tickdata());
+                this.end();
+                this.start();
+            } else {
+                cancelAnimationFrame(this._timer);
+                this._ended = true;
+                this._tick(this.tickdata())
+                this.end();
+            }
         }
     }
     end() {
@@ -101,8 +114,9 @@ class Timer {
 
     }
     cancel() {
+        console.log('Cancelling Timer');
         cancelAnimationFrame(this._timer);
-        // end run?
+        this._ended = true;
     }
     tickdata() {
         return {
@@ -728,6 +742,65 @@ const Inventory = Vue.component('inventory', {
                 this.sell(item, {qty: this.num_junk_autosell, confirm:true});
             });
         },
+
+        // autosell
+        autosell_add(item) {
+            // Uses 'autosellboosters', not the regular sell boosters. autosellboosters are timed too
+            let autoselltime = 1000 * 30;
+            let progressid = `#autosell-${item.id}`;
+            let qty = 1;
+
+            if (this.$store.getters.autosell_is_active(item)) {
+                console.log("Already autoselling");
+                return;
+            }
+
+            let timer = new Timer({
+                runtime: autoselltime,
+                autorun: true,
+                tag: 'autosell',
+                cb: data => {
+                    // Check if we even have any
+                    let checked_qty = this.$store.getters.inv_qty(item.id);
+                    let usable_qty = Math.min(checked_qty, qty);
+                    this.do_sell(item, usable_qty);
+                    //console.log('checkedqty', checked_qty)
+
+                    if (this.$store.getters.inv_qty(item.id) == 0) {
+                        // pause
+                    }
+
+                    // Send counter for how many items we've autosold
+                },
+                tick: tick => {
+                    if (document.querySelector(progressid) !== null) {
+                        if (this.$store.getters.inv_qty(item.id) == 0) {
+                            document.querySelector(progressid).innerText = 'Waiting';
+                            document.querySelector(progressid).style = '';
+                        } else {
+                            document.querySelector(progressid).style = tick.css;
+                            document.querySelector(progressid).innerText = tick.timeleft_s.toFixed(2);
+                        }
+                    }
+                },
+                onStart: () => {
+                    //this.$store.commit('set_status', 'selling');
+                    // take itm from inventory
+                }
+            });
+            timer.start();
+            item['__autosell_timer'] = timer;
+
+            this.$store.dispatch('autosell_add', item);
+        },
+        autosell_rm(item) {
+            // If currently running, cancel and return items to inv. 
+            // nvm, items only taken when do_sell is called, so just cancel
+            this.$store.dispatch('autosell_rm', item);
+        },
+        autosell_current(item) {
+            return _.filter(this.autosell_slots, i => i.id == item.id).length > 0;
+        },
     },
     computed: {
         items_list() {
@@ -795,7 +868,15 @@ const Inventory = Vue.component('inventory', {
             let allowed = this.$store.getters.sum_inv_type('invpageselljunk');
             return allowed;
             //return _.filter(this.items(), i => i.type == 'junk').length;
-        }
+        },
+
+        // autosell
+        autosell_slots_open() {
+            return this.$store.getters.autosell_slots_open;
+        },
+        autosell_slots() {
+            return this.$store.getters.autosell_active();
+        },
     }
 });
 const Actionmenu = Vue.component('actionmenu', {

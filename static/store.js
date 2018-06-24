@@ -52,6 +52,10 @@ const store = new Vuex.Store({
         tmp: {
             achievements: [], // newly unlocked
             run: []
+        },
+
+        autosell: {
+            slots: [],
         }
     },
     actions: {
@@ -213,6 +217,20 @@ const store = new Vuex.Store({
             _.each(_.filter(ctx.state.timers, t => t.tag() == type), (timer) => {
                 timer.start();
             });
+        },
+
+        autosell_add(ctx, item) {
+            if (ctx.getters.autosell_slots > ctx.getters.autosell_active().length) {
+                // Make sure it doesn't exist
+                if (!ctx.getters.autosell_is_active(item)) {
+                    ctx.state.autosell.slots.push(item);
+                }
+            }
+        },
+        autosell_rm(ctx, item) {
+            let slot = ctx.getters.autosell_active(item);
+            slot.__autosell_timer.cancel();
+            ctx.state.autosell.slots = _.reject(ctx.state.autosell.slots, s => s.id == item.id);
         }
     },
     mutations: {
@@ -385,6 +403,11 @@ const store = new Vuex.Store({
         inv_group: (state, g) => type => {
             return _.filter(g.inventory, i => i.dropgroup == type);
         },
+        inv_qty: (state, g) => id => {
+            let f = _.filter(g.inventory, i => i.id == id);
+            if (f.length == 0) return 0;
+            return f[0].qty;
+        },
         running: state => state.time.running,
         time: state => state.time.time,
         run_time: state => {
@@ -474,8 +497,7 @@ const store = new Vuex.Store({
         },
         increased_speed: (state, g) => (type) => {
             let speed = 0;
-            let ups = g.upgrades(true, type); // generally type either speed or sellspeed
-            let pc_inc = sum_field(ups, 'hvalue');
+            let pc_inc = g.sum_inv_type(type)
 
             // Check current boost
             let bkey = {'speed': 'boostspeed', 'sellspeed': 'boostsell'};
@@ -542,6 +564,19 @@ const store = new Vuex.Store({
             if (!g.boost_active(type)) return 0;
             return _.filter(state.player.boosts, b => b.type == type)[0].pvalue;
         },
+
+        // autosellers
+        autosell_slots: (state, g) => g.sum_inv_type('autosellslot'),
+        autosell_slots_open: (state, g) => g.autosell_slots - g.autosell_active().length,
+        autosell_active: state => item => {
+            if (item) {
+                console.log('yes item', item)
+                return _.filter(state.autosell.slots, s => s.id == item.id)[0];
+            } else {
+                return state.autosell.slots;
+            }
+        },
+        autosell_is_active: (state, g) => item => _.filter(state.autosell.slots, s => s.id == item.id).length > 0,
 
     }
 });

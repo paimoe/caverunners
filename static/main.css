@@ -415,3 +415,10 @@ span.pull-right {
 .inv-tools div a {
     color: #fff;
 }
+
+.text-left {
+    text-align:left;
+}
+a.white {
+    color: #fff;
+}

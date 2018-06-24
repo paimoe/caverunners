@@ -194,6 +194,13 @@
                             <div class="pure-u-1-3"></div>
                         </div>
                     </div>
+                    <div v-if="has_upgrade('autosellerslot1')" class="nicetable">
+                        <h1><span>Autosell</span></h1>
+                        <div class="pure-g" v-for="a in autosell_slots">
+                            <div class="pure-u-1-4">{{ a.name }} <a href="#" class="white" v-on:click="autosell_rm(a)">[x]</a></div>
+                            <div class="pure-u-3-4 text-left" v-bind:id="'autosell-' + a.id">Autoselling</div>
+                        </div>
+                    </div>
                 </div>
                 <!-- if no upgrade for grouped, dont show qty column -->
                 <table class="inv pure-table">
@@ -231,6 +238,7 @@
                                 <a v-on:click="sell(i)" v-show="sellable(i)">Sell</a>
                                 <a v-if="max_multi_sell > 1 && !uncommon(i) && sellable(i)" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
                                 <a v-if="usable(i)" v-on:click="use(i)">Use</a>
+                                <a v-if="!uncommon(i) && autosell_slots_open" v-on:click="autosell_add(i)">Autosell</a>
                             </td>
                         </tr>
                     </tbody>
