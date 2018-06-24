@@ -444,10 +444,11 @@ const Charmenu = Vue.component('charmenu', {
         },
         stats() {
             // compute stats
+            let booster_goldfind = this.$store.getters.boost_active_value('boostgold'); // see if boost is active
             return {
                 increased_speed: decimal_to_percent(this.$store.getters.increased_speed('speed')), // convert to %
                 sell_speed: decimal_to_percent(this.$store.getters.increased_speed('sellspeed')),
-                gold_find: this.$store.getters.gold_find,
+                gold_find: this.$store.getters.gold_find + booster_goldfind,
                 magic_find: this.$store.getters.magic_find,
                 max_penalty: this.$store.getters.max_penalty,
                 achievement_count: this.$store.getters.player.achieved.length,
@@ -575,9 +576,9 @@ const Inventory = Vue.component('inventory', {
                 }
                 let sellspeedboost = this.$store.getters.increased_speed('sellspeed');
 
-                let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc * sellspeedboost;
+                let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc * flip_increase(sellspeedboost);
                 //console.log('sell pen', this.$store.getters.penalty_mul, runtime, sellpenalty10pc, sellspeedboost, BASES.SELL_SPEED * 1000 * qty)
-
+                
                 let ele = `#invrow-sell-${item.id}`;
                 this.timer = new Timer({
                     start: start,
@@ -590,6 +591,10 @@ const Inventory = Vue.component('inventory', {
                         this.selling = _.without(this.selling, item.id);
                         this.do_sell(item, qty);
                         this.$store.commit('timer_rm', data.id);
+
+                        // Since runtime is calculated when it starts, end sell boost the first time this happens. makes it possible still to load up
+                        this.$store.dispatch('remove_active_boosters', ['boostsell']);
+
                         // If all are finished
                         if (this.selling.length == 0) {
                             this.$store.commit('set_status', null);

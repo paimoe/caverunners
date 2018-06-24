@@ -142,8 +142,16 @@ const store = new Vuex.Store({
                 }
                 if ('invtotal' in ach.exec) {
                     let val = _.reduce(ctx.getters.inventory, (acc, val) => acc + val.value, 0);
-                    satisfied.push(val >= ach.exec);
+                    satisfied.push(val >= ach.exec.invtotal);
                 }
+                // Total time of run (in seconds)
+                if ('runtime' in ach.exec) {
+                    satisfied.push(ctx.state.run.result.time >= ach.exec.runtime);
+                }
+                if ('flag' in ach.exec) {
+
+                }
+
 
 
                 //console.log('ach conditions', ach.name, satisfied, all_true(satisfied), min_trues, satisfied.length, min_trues === satisfied.length)
@@ -463,8 +471,9 @@ const store = new Vuex.Store({
             let ups = g.upgrades(true, type); // generally type either speed or sellspeed
             let pc_inc = sum_field(ups, 'hvalue');
 
-            // Check current boost            
-            let boost = g.boost_active_value(`boost${type}`); // see if boost is active
+            // Check current boost
+            let bkey = {'speed': 'boostspeed', 'sellspeed': 'boostsell'};
+            let boost = g.boost_active_value(bkey[type]); // see if boost is active
             //boost = 0;
             return percent_to_decimal(pc_inc + boost);
         },
