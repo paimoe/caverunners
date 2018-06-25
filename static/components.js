@@ -53,6 +53,12 @@ class Timer {
         this._tick(this.tickdata());
         //return this.queue;
     }
+    calltick() {
+        let res = this._tick(this.tickdata());
+        if (res === false) {
+            // we returned false from our callback, so just end it
+        }
+    }
     start() {
         //let periods = this.timeleft() / this.periods; // after this many ms, run periodic cb (do later)
         if (this._queue) {
@@ -610,7 +616,9 @@ const Inventory = Vue.component('inventory', {
                     tag: 'sell',
                     cb: data => {
                         //console.log('can sell ', item.name, ' again');
-                        document.querySelector(ele).style = '';
+                        if (document.querySelector(ele) !== null) {
+                            document.querySelector(ele).style = '';
+                        }
                         this.selling = _.without(this.selling, item.id);
                         this.do_sell(item, qty);
                         this.$store.commit('timer_rm', data.id);
@@ -624,6 +632,9 @@ const Inventory = Vue.component('inventory', {
                         }
                     },
                     tick: function(tick) {
+                        if (document.querySelector(ele) == null) {
+                            return false;
+                        }
                         if (!tick.queued) {
                             document.querySelector(ele).innerText = tick.timeleft_s.toFixed(2);
                             document.querySelector(ele).style = tick.css;
