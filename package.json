@@ -19,6 +19,7 @@
   "dependencies": {
     "blueimp-md5": "^2.10.0",
     "localforage": "^1.7.1",
+    "random-js": "^1.0.8",
     "underscore": "^1.9.1",
     "vue": "^2.5.16",
     "vue-router": "^3.0.1",

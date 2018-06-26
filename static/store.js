@@ -59,14 +59,34 @@ const store = new Vuex.Store({
         }
     },
     actions: {
+        loadsave(ctx, sdata) {
+            console.log('loaded save', sdata.player.name);
+
+            ctx.state.player = sdata.player;
+            ctx.state.stats = sdata.stats;
+            ctx.state.inv = sdata.inv;
+            //state.messages.push({type: 'saveload', m:'Save loaded'});
+
+            // Set up timers in main Vue
+        },
         save(ctx) {
+            let as_slots = [];
+
+            // Might just have to recreate the functions when we load, instead of saving them
+            _.each(ctx.state.autosell.slots, sl => {
+                as_slots.push(sl.id);
+            });
+            
             let save = {
                 player: ctx.state.player,
                 stats: ctx.state.stats,
                 inv: ctx.state.inv,
+                autosell_slots: as_slots,
+                run: _.map(ctx.state.timers, t => t.toJSON()),
             };
-            //if (!save.player.opts) save.player.opts = {};
-            DB.setItem('save', save);
+            DB.setItem('save', save, err => {
+                //console.error(err);
+            });
             //ctx.commit('message', {type: 'saveload', m: 'Game Saved', unique:true});
         },
         end_run(ctx, run) {
@@ -213,6 +233,9 @@ const store = new Vuex.Store({
             }
         },
 
+        add_timer(ctx, timer) {
+            // Put timers in a central location, fetchable by key
+        },
         start_queued_timers(ctx, type) {
             _.each(_.filter(ctx.state.timers, t => t.tag() == type), (timer) => {
                 timer.start();
@@ -226,11 +249,13 @@ const store = new Vuex.Store({
                     ctx.state.autosell.slots.push(item);
                 }
             }
+            ctx.dispatch('save');
         },
         autosell_rm(ctx, item) {
             let slot = ctx.getters.autosell_active(item);
             slot.__autosell_timer.cancel();
             ctx.state.autosell.slots = _.reject(ctx.state.autosell.slots, s => s.id == item.id);
+            ctx.dispatch('save');
         }
     },
     mutations: {
@@ -284,24 +309,6 @@ const store = new Vuex.Store({
             }
             // did we level up?
             //console.log('lev', nlevel, state.player.level, state.player.exp)
-        },
-        save(state) {
-            alert('dont use this, use dispatch()')
-            // store state.player, inv in DB
-            let save = {
-                player: state.player,
-                stats: state.stats,
-                inv: state.inv,
-            };
-            DB.setItem('save', save);
-            //state.messages.push({type: 'saved', m: 'Game Saved', unique:true});
-        },
-        loadsave(state, sdata) {
-            console.log('loaded save', sdata.player.name);
-            state.player = sdata.player;
-            state.stats = sdata.stats;
-            state.inv = sdata.inv;
-            //state.messages.push({type: 'saveload', m:'Save loaded'});
         },
         message(state, message) {
             if (typeof(message) === 'string') {
@@ -570,7 +577,6 @@ const store = new Vuex.Store({
         autosell_slots_open: (state, g) => g.autosell_slots - g.autosell_active().length,
         autosell_active: state => item => {
             if (item) {
-                console.log('yes item', item)
                 return _.filter(state.autosell.slots, s => s.id == item.id)[0];
             } else {
                 return state.autosell.slots;

@@ -12,6 +12,7 @@ class Timer {
         this._queue = obj.queue || false;
         this._tag = obj.tag;
         this.autorun = obj.autorun || false;
+        this.extra = obj.extra || {};
         //this.boosts = obj.boosts;
 
         this._cb_start = obj.onStart || function() {};
@@ -113,7 +114,8 @@ class Timer {
         this.cb({
             id: this._id,
             time_taken: this._end - this._start,
-            time_taken_s: (this._end - this._start) / 1000
+            time_taken_s: (this._end - this._start) / 1000,
+            extra: this.extra
         });
     }
     pause() {
@@ -176,6 +178,20 @@ class Timer {
     save() {
         // output json string for localstorage
     }
+    toJSON() {
+        return {
+            start: this._start,
+            end: this._end,
+            runtime: this.runtime,
+            queue: this._queue,
+            //cb: this.cb,
+            tag: this._tag,
+            autorun: this.autorun,
+            //tick: this._tick,
+            //onStart: this._cb_start,
+            extra: this.extra,
+        }
+    }
 };
 
 const Statusbar = Vue.component('statusbar', {
@@ -226,9 +242,25 @@ const Statusbar = Vue.component('statusbar', {
         }
     },
     methods: {
-        run() {
+        set_timer(opts) {
+            if (!opts) console.error('No data sent to start timer');
+
+            opts.cb = data => {
+                this.end_run(data);
+                this.$store.commit('set_status', null);
+                this.$store.commit('timer_rm', data.id);
+            };
+            opts.tick = tick => {
+                this.time = tick.timeleft;
+            };
+            opts.periodic = tick => {
+
+            };
+
+            return new Timer(opts);
+        },
+        run(opts) {
             //console.log('run dungeon');
-            // hwen loading an old run, jsut make sure that the time_start is in the past and we should start part way thorugh
             let diff = this.$store.getters.difficulty;
             let diff_range = 0.1;
             let min = diff * (1 - diff_range);
@@ -243,29 +275,27 @@ const Statusbar = Vue.component('statusbar', {
             this.time_start = Date.now();
             this.time_take = runtime;
 
-            this.timer = new Timer({
-                start: this.time_start,
-                //runtime: runtime,
-                end: this.time_start + runtime,
-                tag: 'run',
-                cb: data => {
-                    this.end_run(data);
-                    this.$store.commit('set_status', null);
-                    this.$store.commit('timer_rm', data.id)
-                },
-                tick: tick => {
-                    //console.log('do tick', tick)
-                    this.time = tick.timeleft;
-                    // or could update the sell field, idk
-                },
-                periodic: tick => {
-                    // got a 'random' periodic ping
-                },
-            });
+            if (!opts) {
+                //console.log('setting new opts');
+                opts = {
+                    start: this.time_start,
+                    end: this.time_start + runtime,
+                    tag: 'run',
+                    extra: {
+                        seed: random_seed(),
+                    }
+                };
+            } else {
+                console.log('using passed in opts', opts);
+            }
+
+            this.timer = this.set_timer(opts);
             this.timer.start();
+
             this.$store.commit('timer_add', this.timer);
             this.ack_end = false;
             this.$store.commit('set_status', 'running');
+            this.$store.dispatch('save');
         },
         end_run(data) {
             //console.log('ended run, heres some loot');
@@ -560,6 +590,7 @@ const Inventory = Vue.component('inventory', {
         },
         do_sell(item, qty) {
             // Add gold
+            // Check we still have the item, as a failsafe
             this.$store.commit('add_gold', item.value * qty);
             this.$store.commit('stat', ['gold_sales', item.value * qty]);
             this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
@@ -800,8 +831,9 @@ const Inventory = Vue.component('inventory', {
                 }
             });
             timer.start();
-            item['__autosell_timer'] = timer;
+            item['_timer_id'] = timer.id();
 
+            this.$store.dispatch('add_timer', timer);
             this.$store.dispatch('autosell_add', item);
         },
         autosell_rm(item) {

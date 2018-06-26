@@ -65,6 +65,11 @@ function all_equal(list, cmp) {
     return list.length > 0 && _.every(list, x => x === cmp);
 }
 
+function random_seed() {
+    let mt = Random.engines.mt19937().autoSeed();
+    return mt();
+}
+
 function ITEM_FIND(options) {
     // Big mega item find function
     /*
