@@ -282,7 +282,7 @@ const Statusbar = Vue.component('statusbar', {
             this.time_start = Date.now();
             this.time_take = runtime;
 
-            if (!opts) {
+            if (!opts || opts.tag != 'run') {
                 //console.log('setting new opts');
                 opts = {
                     start: this.time_start,
@@ -293,7 +293,7 @@ const Statusbar = Vue.component('statusbar', {
                     }
                 };
             } else {
-                console.log('using passed in opts', opts);
+                //console.log('using passed in opts', opts);
             }
 
             //console.log('Seed: ', opts.extra.seed);
@@ -321,6 +321,7 @@ const Statusbar = Vue.component('statusbar', {
 
             let gold = rand_between(diff, diff * 1.5, data.extra.seed);
             let moregold = gold * goldboost;
+
             this.$store.commit('add_gold', gold + moregold);
             this.$store.commit('stat', ['gold_earned', gold + moregold]);
 
@@ -361,7 +362,8 @@ const Statusbar = Vue.component('statusbar', {
                     'boost': {
                         gold: moregold,
                     }
-                }
+                },
+                timer_id: data.id,
             });
 
             // Set status to 'returning home'
@@ -417,7 +419,7 @@ const Notices = Vue.component('notices', {
             
             this.ack_end = true;
             this.last_run = 'etc';
-            this.$store.commit('run_end');
+            this.$store.dispatch('cleanup_run');
             this.$store.dispatch('check_achievements');
             this.$store.dispatch('save');
             this.selected_list = [];
@@ -426,7 +428,7 @@ const Notices = Vue.component('notices', {
         },
 
         take_all() {
-            this.selected_list = this.runitems();
+            this.selected_list = this.runitems(false);
             this.confirm_end();
         },
 
@@ -451,8 +453,9 @@ const Notices = Vue.component('notices', {
         has_upgrade(up) {
             return this.$store.getters.has_upgrade(up);
         },
-        runitems() {
-            // Group it
+        runitems(sort) {
+            // Group it/sort it
+            sort = sort || true;
             let run = this.$store.getters.run.result;
             let counts = _.countBy(run.items, i => i.id);
             let _items = _.map(_.unique(run.items), x => {
@@ -460,8 +463,20 @@ const Notices = Vue.component('notices', {
                 x.qty = counts[x.id] || 1;
                 return x;
             });
-            //console.log('counts', _items, run.items);
-            return _.sortBy(_items, x => x.rarity);
+
+            if (!sort) {
+                return _items;
+            }
+
+            let z = _.groupBy(_.sortBy(_items, x => x.rarity), i => {
+                if (_.contains(['junk', 'common'], i.dropgroup)) {
+                    return 'common';
+                }
+                return i.dropgroup;
+            });
+            z = _.sortBy(z, (ele, idx) => _.indexOf(BASES.TIER_ORDER, idx));
+
+            return z;
         },
     },
     computed: {
@@ -481,6 +496,10 @@ const Notices = Vue.component('notices', {
                 return 'Take Nothing';
             }
             return `Take ${total} item${s}`;
+        },
+        found_items() {
+            let run = this.$store.getters.run.result;
+            return _.unique(run.items).length > 0;
         }
     }
 });
@@ -661,8 +680,9 @@ const Inventory = Vue.component('inventory', {
                             document.querySelector(ele).style = '';
                         }
                         this.selling = _.without(this.selling, item.id);
-                        this.do_sell(item, qty);
                         this.$store.commit('timer_rm', data.id);
+
+                        this.do_sell(item, qty);
 
                         // Since runtime is calculated when it starts, end sell boost the first time this happens. makes it possible still to load up
                         this.$store.dispatch('remove_active_boosters', ['boostsell']);
@@ -671,6 +691,8 @@ const Inventory = Vue.component('inventory', {
                         if (this.selling.length == 0) {
                             this.$store.commit('set_status', null);
                         }
+
+                        this.$store.dispatch('save');
                     },
                     tick: function(tick) {
                         if (document.querySelector(ele) == null) {

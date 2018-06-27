@@ -43,14 +43,16 @@
             <div v-if="show()" class="pure-u-1 rundone" id="noticebar">
                 <p>Your run took {{ run.time.toFixed(2) }}s!</p>
                 <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em><em class="gold" v-if="run.boost.gold > 0">(+{{ run.boost.gold.toFixed(0) }})</em> gold.</p>
-                <p v-if="runitems().length > 0">You also found the following items. Click to select the ones to keep.</p>
-                <ul class="items" v-if="runitems().length > 0">
-                    <li v-for="i in runitems()" v-bind:class="['itemselector', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.dropgroup]" v-on:click="select(i)">
-                        {{ text(i) }}
-                        <span v-if="selected(i)">&#9745;</span>
-                        <span v-if="!selected(i)">&#9744;</span>
-                    </li>
-                </ul>
+                <div v-if="found_items">
+                    <p>You also found the following items. Click to select the ones to keep.</p>
+                    <ul class="items" v-for="(list, type) in runitems()">
+                        <li v-for="i in list" v-bind:class="['itemselector', 'noselect', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.dropgroup]" v-on:click="select(i)">
+                            {{ text(i) }}
+                            <span v-if="selected(i)">&#9745;</span>
+                            <span v-if="!selected(i)">&#9744;</span>
+                        </li>
+                    </ul>
+                </div>
                 <input type="button" :value="endbutton" v-on:click="confirm_end()" />
                 <input type="button" v-if="has_upgrade('runtakeall')" value="Take All" v-on:click="take_all()" />
             </div>
@@ -364,7 +366,7 @@
                         });
                     },
                     setup_timers(sdata) {
-                        console.log('setup_timers()',sdata.run, sdata.autosell_slots);
+                        //console.log('setup_timers()',sdata.run, sdata.autosell_slots);
                         for (let t of sdata.run) {
                             // now we call Statusbar.run(t) 
                             this.$refs.status.run(t);

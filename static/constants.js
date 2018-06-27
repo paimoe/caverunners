@@ -12,6 +12,7 @@ const BASES = {
     SCRAP_RATE: 10, // 10% to get scrap
     DROP_NUM: [6, 12], // min/max number of items to drop
     SELL_SPEED: 5, // seconds to sell
+    TIER_ORDER: ['junk', 'common', 'rare', 'boost', 'set', 'S'],
 };
 var FLAGS = [
     'cheated',
@@ -153,9 +154,9 @@ function ITEM_FIND(options) {
         }
         find_types.push(find_type);
     }
-    console.log('find_types', _.countBy(find_types));
+    //console.log('find_types', _.countBy(find_types));
     find_types = _.sortBy(find_types, t => {
-        return _.indexOf(['junk', 'common', 'rare', 'boost', 'set', 'S'], t);
+        return _.indexOf(BASES.TIER_ORDER, t);
     });
     //console.log('find_types', find_types);
     for (j = 0; j < find_types.length; j++) {

@@ -76,7 +76,9 @@ const store = new Vuex.Store({
             _.each(ctx.state.autosell.slots, sl => {
                 as_slots.push(sl.id);
             });
-            
+
+            //console.log('saving timers', _.map(ctx.state.timers, t => t.id()));
+
             let save = {
                 player: ctx.state.player,
                 stats: ctx.state.stats,
@@ -90,11 +92,17 @@ const store = new Vuex.Store({
             //ctx.commit('message', {type: 'saveload', m: 'Game Saved', unique:true});
         },
         end_run(ctx, run) {
-            // ummm, oh yeah group into qty too
             ctx.state.run = run;
+        },
+        cleanup_run(ctx) {
+            // ummm, oh yeah group into qty too
+            ctx.state.run.ack_end = true;
+            ctx.state.run.running = false;
 
-            //ctx.dispatch('check_achievements');
-            // check achievements when we click take/take all
+            // Remove from timers or it'll restart on refresh
+            ctx.state.timers = _.reject(ctx.state.timers, t => t.id() == ctx.state.run.timer_id);
+            ctx.dispatch('save');
+
         },
         check_achievements(ctx) {
             let achs = ctx.getters.achs;
