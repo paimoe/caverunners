@@ -174,6 +174,7 @@ function ITEM_FIND(options) {
         //console.log('picked item', picked_item.name);
         let picked_count = rand_between(1, picked_item.dropmax, seed + j);
         picked_count = Math.min(picked_count, num_drops); // bound it to num_drops, otherwise we get 10 items, but roll x5 on all, and get 50 items
+
         //console.log('item and pick count', picked_item.name, picked_count);
         let picked_bunch = fill_array(picked_item, picked_count);
         _drop_pool = _drop_pool.concat(picked_bunch);

@@ -729,7 +729,7 @@ const Inventory = Vue.component('inventory', {
             if (!this.$store.getters.has_upgrade('inv_totalvalue')) {
                 return '?';
             }
-            return _.reduce(inv, (acc, val) => acc + val.value, 0);
+            return _.reduce(inv, (acc, val) => this.sellable(val) ? acc + val.value : acc, 0);
         },
         totalitems() {
             if (!this.$store.getters.has_upgrade('inv_totalcount')) {
