@@ -125,6 +125,17 @@ function ITEM_FIND(options) {
     //console.log('dgroups', _drop_groups)
     var _drop_pool = [];
     var find_types = [];
+
+    // number of drops limited to
+    var num_limits = {
+        'boost': 2, 
+        'S': 1,
+    };
+    var num_limits_replace = {
+        'boost': ['rare', 'set'],
+        'S': ['set', 'rare']
+    };
+
     for (i = 0; i < num_drops; i++) {
         // Roll for type
         let rng = rand_between(1,100, seed + i);
@@ -134,15 +145,15 @@ function ITEM_FIND(options) {
             // S
             //console.log('Adding S-tier',rng);
             find_type = 'S';
-        } else if (rng > 97) {
+        } else if (rng > 95) {
             // set
             //console.log('Adding unique',rng);
             find_type = 'set'; 
-        } else if (rng > 90) {
+        } else if (rng > 80) {
             // boost
             //console.log('Adding set',rng);
             find_type = 'boost';
-        } else if (rng > 75) {
+        } else if (rng > 65) {
             // rare
             //console.log('Adding rare',rng);
             find_type = 'rare';
@@ -152,9 +163,24 @@ function ITEM_FIND(options) {
             
             //console.log('Adding ' + find_type,rng);
         }
+
+        // Make sure we don't go over our limit
+        // @todo: should probably do..while this, so we don't end up with boost turning into S etc
+        if (find_type in num_limits) {
+            let limit = num_limits[find_type];
+
+            if (limit > 0) {
+                num_limits[find_type] -= 1;
+            } else {
+                old_ft = find_type;
+                find_type = rand_pick(num_limits_replace[find_type], seed + i);
+                console.log(`replaced find_type ${old_ft} -> ${find_type}`);
+            }
+        }
         find_types.push(find_type);
     }
     //console.log('find_types', _.countBy(find_types));
+
     find_types = _.sortBy(find_types, t => {
         return _.indexOf(BASES.TIER_ORDER, t);
     });

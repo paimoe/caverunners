@@ -428,7 +428,7 @@ const Notices = Vue.component('notices', {
         },
 
         take_all() {
-            this.selected_list = this.runitems(false);
+            this.selected_list = this.runitems(false)[0];
             this.confirm_end();
         },
 
@@ -540,7 +540,7 @@ const Charmenu = Vue.component('charmenu', {
                 items: this.$store.getters.items.length,
                 upgrades: this.$store.getters.upgrades(false).length,
                 achs: this.$store.getters.achs.length,
-                version: 0.2,
+                version: 0.3,
             }
         },
         opts() {
@@ -620,8 +620,10 @@ const Inventory = Vue.component('inventory', {
         do_sell(item, qty) {
             // Add gold
             // Check we still have the item, as a failsafe
-            this.$store.commit('add_gold', item.value * qty);
-            this.$store.commit('stat', ['gold_sales', item.value * qty]);
+            let total_gold = item.value * qty;
+            if (total_gold == NaN) total_gold = 0;
+            this.$store.commit('add_gold', total_gold);
+            this.$store.commit('stat', ['gold_sales', total_gold]);
             this.$store.dispatch('remove_item', {'item': item, 'qty': qty});
             this.$store.dispatch('check_achievements');
             this.$store.dispatch('save');
