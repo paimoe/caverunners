@@ -22,7 +22,6 @@ function has_flag(name) {
 };
 var DB = localforage;
 var HASH = 'd5fde2d59b7bdada04dec44875d89636';
-var rand_between = (min, max) => Math.random() * (max - min) + min;
 var random_item = (items, num, areas) => {
     /*
      So get the unique weights, and lean towards the lower weights
@@ -65,10 +64,19 @@ function all_equal(list, cmp) {
     return list.length > 0 && _.every(list, x => x === cmp);
 }
 
+var RNG = Random.engines.mt19937();
+function rand_between(min, max, seed) {
+    let engine = RNG.seed(seed);
+    return Random.integer(min, max)(engine);
+    //Math.random() * (max - min) + min;
+};
 function random_seed() {
     let mt = Random.engines.mt19937().autoSeed();
     return mt();
-}
+};
+function rand_pick(list, seed) {
+    return Random.pick(RNG.seed(seed), list);
+};
 
 function ITEM_FIND(options) {
     // Big mega item find function
@@ -83,6 +91,7 @@ function ITEM_FIND(options) {
     itemlevels = [junk, common, special, rare, set, unique, S (for s-tier)]
     maybes = [quest]
     */
+    let seed = options.seed || 0; // probably error if no seed present
     let area = options.area || null;
     let level = options.player.level || 1; // if level isn't set, then only show level 1 items
     let diff = options.difficulty || 1;
@@ -100,9 +109,10 @@ function ITEM_FIND(options) {
 
     // Build range of all items, and rarities
     let boost_drops_time = Math.floor(time / 30);
-    let num_drops_base = Math.floor(rand_between(BASES.DROP_NUM[0], BASES.DROP_NUM[1]));
+    let num_drops_base = rand_between(BASES.DROP_NUM[0], BASES.DROP_NUM[1], seed);
+
     let num_drops = num_drops_base + itemboostnum + boost_drops_time + level;
-    console.log(`num_drops_base:${num_drops_base} boost:${itemboostnum} timeboost:${boost_drops_time} level:${level} total:${num_drops}`);
+    //console.log(`num_drops_base:${num_drops_base} boost:${itemboostnum} timeboost:${boost_drops_time} level:${level} total:${num_drops}`);
 
     var group_probs = {
         'common': 60,
@@ -116,7 +126,8 @@ function ITEM_FIND(options) {
     var find_types = [];
     for (i = 0; i < num_drops; i++) {
         // Roll for type
-        let rng = rand_between(1,100);
+        let rng = rand_between(1,100, seed + i);
+        
         var find_type = 'junk';
         if (rng >= 99) {
             // S
@@ -136,11 +147,13 @@ function ITEM_FIND(options) {
             find_type = 'rare';
         } else {
             // rng < 60, common/junk 50/50 shot
-            find_type = rand_between(1,100) > 50 ? 'common' : 'junk';
+            find_type = rand_pick(['common', 'junk'], seed + i);
+            
             //console.log('Adding ' + find_type,rng);
         }
         find_types.push(find_type);
     }
+    console.log('find_types', _.countBy(find_types));
     find_types = _.sortBy(find_types, t => {
         return _.indexOf(['junk', 'common', 'rare', 'boost', 'set', 'S'], t);
     });
@@ -150,14 +163,15 @@ function ITEM_FIND(options) {
         //console.log('Picking item of type', find_type);
         let pool = _.filter(_items, x => x.dropgroup == find_types[j]);
         //console.log('pool', find_type, _.pluck(pool, 'name'));
-        let picked_item = _.sample(pool);
+        let picked_item = rand_pick(pool, seed + j);
+        //console.log('picked_item', picked_item.name);
         if (picked_item === undefined) {
             //console.log('No item for you :(');
             num_drops -= 1;
             continue;
         }
         //console.log('picked item', picked_item.name);
-        let picked_count = Math.floor(rand_between(1, picked_item.dropmax));
+        let picked_count = rand_between(1, picked_item.dropmax, seed + j);
         picked_count = Math.min(picked_count, num_drops); // bound it to num_drops, otherwise we get 10 items, but roll x5 on all, and get 50 items
         //console.log('item and pick count', picked_item.name, picked_count);
         let picked_bunch = fill_array(picked_item, picked_count);

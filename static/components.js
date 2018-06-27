@@ -266,8 +266,15 @@ const Statusbar = Vue.component('statusbar', {
             let min = diff * (1 - diff_range);
             let max = diff * (1 + diff_range);
 
+            var seed = 0;
+            if (opts) {
+                seed = opts.extra.seed;
+            } else {
+                seed = random_seed();
+            }
+
             let inc = this.$store.getters.increased_speed('speed');
-            let runtime = rand_between(min, max) * 1000 * flip_increase(inc);
+            let runtime = rand_between(min, max, seed) * 1000 * flip_increase(inc);
             //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff} inc:${inc} flip:${flip_increase(inc)}`);
             //runtime = 5000;
             this.time = runtime; // Use this for display
@@ -282,12 +289,14 @@ const Statusbar = Vue.component('statusbar', {
                     end: this.time_start + runtime,
                     tag: 'run',
                     extra: {
-                        seed: random_seed(),
+                        seed: seed,
                     }
                 };
             } else {
                 console.log('using passed in opts', opts);
             }
+
+            //console.log('Seed: ', opts.extra.seed);
 
             this.timer = this.set_timer(opts);
             this.timer.start();
@@ -298,7 +307,7 @@ const Statusbar = Vue.component('statusbar', {
             this.$store.dispatch('save');
         },
         end_run(data) {
-            //console.log('ended run, heres some loot');
+            //console.log('ended run, heres some loot', data, data.extra.seed);
 
             this.running = false;
 
@@ -310,14 +319,14 @@ const Statusbar = Vue.component('statusbar', {
             let booster_goldfind = this.$store.getters.boost_active_value('boostgold'); // see if boost is active
             let goldboost = percent_to_decimal(this.$store.getters.gold_find + booster_goldfind) - 1; // 
 
-            let gold = rand_between(diff, diff * 0.5);
+            let gold = rand_between(diff, diff * 1.5, data.extra.seed);
             let moregold = gold * goldboost;
             this.$store.commit('add_gold', gold + moregold);
             this.$store.commit('stat', ['gold_earned', gold + moregold]);
 
             // Gain exp
             if (!this.$store.getters.is_max_level) {
-                var expgain = rand_between(0.5*diff, diff);
+                var expgain = rand_between(0.5*diff, diff, data.extra.seed);
                 this.$store.commit('add_exp', expgain);
             } else {
                 var expgain = 0;
@@ -326,6 +335,7 @@ const Statusbar = Vue.component('statusbar', {
             // chance for item
             var newitems = [];
             var newitems = ITEM_FIND({
+                seed: data.extra.seed,
                 area: null,
                 player: this.$store.getters.player,
                 items: this.$store.getters.items, // find a way to not have to inject this
