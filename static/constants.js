@@ -174,7 +174,7 @@ function ITEM_FIND(options) {
             } else {
                 old_ft = find_type;
                 find_type = rand_pick(num_limits_replace[find_type], seed + i);
-                console.log(`replaced find_type ${old_ft} -> ${find_type}`);
+                //console.log(`replaced find_type ${old_ft} -> ${find_type}`);
             }
         }
         find_types.push(find_type);

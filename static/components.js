@@ -428,7 +428,7 @@ const Notices = Vue.component('notices', {
         },
 
         take_all() {
-            this.selected_list = this.runitems(false)[0];
+            this.selected_list = _.flatten(this.runitems(false));
             this.confirm_end();
         },
 
@@ -455,7 +455,7 @@ const Notices = Vue.component('notices', {
         },
         runitems(sort) {
             // Group it/sort it
-            sort = sort || true;
+            sort = sort === undefined ? true : sort;
             let run = this.$store.getters.run.result;
             let counts = _.countBy(run.items, i => i.id);
             let _items = _.map(_.unique(run.items), x => {
