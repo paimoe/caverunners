@@ -276,7 +276,7 @@ const Statusbar = Vue.component('statusbar', {
             let inc = this.$store.getters.increased_speed('speed');
             let runtime = rand_between(min, max, seed) * 1000 * flip_increase(inc);
             //console.log('RUNTIME',runtime, `min:${min} max:${max} diff:${diff} inc:${inc} flip:${flip_increase(inc)}`);
-            //runtime = 5000;
+            //runtime = 500;
             this.time = runtime; // Use this for display
             this.running = true;
             this.time_start = Date.now();
@@ -469,10 +469,10 @@ const Notices = Vue.component('notices', {
             }
 
             let z = _.groupBy(_.sortBy(_items, x => x.rarity), i => {
-                if (_.contains(['junk', 'common'], i.dropgroup)) {
+                if (_.contains(['junk', 'common'], i.drop_group)) {
                     return 'common';
                 }
-                return i.dropgroup;
+                return i.drop_group;
             });
             z = _.sortBy(z, (ele, idx) => _.indexOf(BASES.TIER_ORDER, idx));
 
@@ -620,7 +620,7 @@ const Inventory = Vue.component('inventory', {
         do_sell(item, qty) {
             // Add gold
             // Check we still have the item, as a failsafe
-            let total_gold = item.value * qty;
+            let total_gold = item.price * qty;
             if (total_gold == NaN) total_gold = 0;
             this.$store.commit('add_gold', total_gold);
             this.$store.commit('stat', ['gold_sales', total_gold]);
@@ -669,7 +669,7 @@ const Inventory = Vue.component('inventory', {
 
                 let runtime = BASES.SELL_SPEED * 1000 * qty * sellpenalty10pc * flip_increase(sellspeedboost);
                 //console.log('sell pen', this.$store.getters.penalty_mul, runtime, sellpenalty10pc, sellspeedboost, BASES.SELL_SPEED * 1000 * qty)
-                
+                //runtime = 100;
                 let ele = `#invrow-sell-${item.id}`;
                 this.timer = new Timer({
                     start: start,
@@ -731,7 +731,7 @@ const Inventory = Vue.component('inventory', {
             if (!this.$store.getters.has_upgrade('inv_totalvalue')) {
                 return '?';
             }
-            return _.reduce(inv, (acc, val) => this.sellable(val) ? acc + val.value : acc, 0);
+            return _.reduce(inv, (acc, val) => this.sellable(val) ? acc + parseFloat(val.price) : acc, 0);
         },
         totalitems() {
             if (!this.$store.getters.has_upgrade('inv_totalcount')) {
@@ -740,7 +740,7 @@ const Inventory = Vue.component('inventory', {
             return this.$store.getters.inventory.length;
         },
         uncommon(item) {
-            return !_.contains(['junk', 'common'], item.dropgroup);
+            return !_.contains(['junk', 'common'], item.drop_group);
         },
         close_achievement(name) {
             this.$store.state.tmp.achievements = _.reject(this.$store.state.tmp.achievements, a => a.name == name);
@@ -762,7 +762,7 @@ const Inventory = Vue.component('inventory', {
 
         use(item) {
             if (confirm(`Do you want to use a ${item.name}?`)) {
-                if (item.dropgroup == 'boost') {
+                if (item.drop_group == 'boost') {
                     // boostgold, boostspeed, boostsell
                     // Make sure we haven't already set one (for now, multiple later)
                     if (this.$store.getters.boost_active(item.type)) {
@@ -780,9 +780,9 @@ const Inventory = Vue.component('inventory', {
         usable(item) {
             //return false;
             /*if (this.$store.has_upgrade('use_boosts')) {
-                return 'boost' == item.dropgroup;
+                return 'boost' == item.drop_group;
             }*/
-            switch(item.dropgroup) {
+            switch(item.drop_group) {
                 case 'boost':
                     return this.$store.getters.has_upgrade('use_boosts');
                     break;
@@ -792,7 +792,7 @@ const Inventory = Vue.component('inventory', {
                 default:
                     return false;
             }
-            //return _.contains(['boost', 'quest'], item.dropgroup);
+            //return _.contains(['boost', 'quest'], item.drop_group);
         },
 
         // Some multi selling
@@ -801,12 +801,12 @@ const Inventory = Vue.component('inventory', {
             this.sell(item, {qty: max, confirm: true});
         },
         sellable(item) {
-            return !_.contains(['boost', 'S'], item.dropgroup);
+            return !_.contains(['boost', 'S'], item.drop_group);
         },
 
         // Sell junk
         sell_max_junk() {
-            let junk = _.groupBy(_.filter(this.items(), i => i.type == 'junk'), 'id');
+            let junk = _.groupBy(_.filter(this.items(), i => i.item_type == 'junk'), 'id');
             // Don't let it run if we're currently selling
             if (this.$store.getters.status == 'selling') {
                 alert('Cannot start while selling');
@@ -904,8 +904,7 @@ const Inventory = Vue.component('inventory', {
             // add sorts, filters
             if (this.sort_col !== null) {
                 //console.log('sortcol', this.sort_col)
-                let sort = this.sort_col == 'weight' ? 'size' : this.sort_col;
-                inv = _.sortBy(inv, sort);
+                inv = _.sortBy(inv, this.sort_col);
                 if (this.sort_dir == 'asc') {
                     inv = inv.reverse();
                 }

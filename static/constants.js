@@ -104,7 +104,7 @@ function ITEM_FIND(options) {
     // Filter the possible items from this area, and max level
     var _items = options.items;
     // level
-    _items = _.filter(_items, i => i.minlevel <= level);
+    _items = _.filter(_items, i => i.min_level <= level);
     // area [unused]
     //_items = _.filter(_items, i => _.some([area], i.location));
 
@@ -120,7 +120,7 @@ function ITEM_FIND(options) {
     };
 
     // Count the number of items per type. If we don't have any rares for this area/level, then knock it down a category
-    var _drop_groups = _.groupBy(_items, 'dropgroup');
+    var _drop_groups = _.groupBy(_items, 'drop_group');
     //console.log('items', _items);
     //console.log('dgroups', _drop_groups)
     var _drop_pool = [];
@@ -188,7 +188,7 @@ function ITEM_FIND(options) {
     for (j = 0; j < find_types.length; j++) {
         // Now run through the list
         //console.log('Picking item of type', find_type);
-        let pool = _.filter(_items, x => x.dropgroup == find_types[j]);
+        let pool = _.filter(_items, x => x.drop_group == find_types[j]);
         //console.log('pool', find_type, _.pluck(pool, 'name'));
         let picked_item = rand_pick(pool, seed + j);
         //console.log('picked_item', picked_item.name);
@@ -198,7 +198,7 @@ function ITEM_FIND(options) {
             continue;
         }
         //console.log('picked item', picked_item.name);
-        let picked_count = rand_between(1, picked_item.dropmax, seed + j);
+        let picked_count = rand_between(1, picked_item.drop_max, seed + j);
         picked_count = Math.min(picked_count, num_drops); // bound it to num_drops, otherwise we get 10 items, but roll x5 on all, and get 50 items
 
         //console.log('item and pick count', picked_item.name, picked_count);
@@ -219,7 +219,7 @@ function ITEM_FIND(options) {
     //console.log('_drop_pool', _drop_pool);
 
     // Add possible extras; quest items, notes for quests
-    //S = _.filter(_items, x => x.dropgroup == 'boost')[0]
+    //S = _.filter(_items, x => x.drop_group == 'boost')[0]
     //console.log('SSSSS', S)
     //_drop_pool.push(S)
 

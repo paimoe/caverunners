@@ -46,7 +46,7 @@
                 <div v-if="found_items">
                     <p>You also found the following items. Click to select the ones to keep.</p>
                     <ul class="items" v-for="(list, type) in runitems()">
-                        <li v-for="i in list" v-bind:class="['itemselector', 'noselect', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.dropgroup]" v-on:click="select(i)">
+                        <li v-for="i in list" v-bind:class="['itemselector', 'noselect', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.drop_group]" v-on:click="select(i)">
                             {{ text(i) }}
                             <span v-if="selected(i)">&#9745;</span>
                             <span v-if="!selected(i)">&#9744;</span>
@@ -228,12 +228,12 @@
                         <tr v-for="i in items_list">
                             <!--<td v-bind:class="{'busy': midsell()}"><router-link :to="{name: 'itempage', params: {id: i.id}}">{{ i.name }}</router-link>-->
                             <td>{{ i.name }}
-                                <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.dropgroup]">&#x25CF;</span>
+                                <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.drop_group]">&#x25CF;</span>
                                 <span v-show="has_upgrade('inv_group') && i.qty > 1" style="color:#ddd" class="pull-right">x{{ i.qty }}</span>
                             </td>
-                            <td class="txt-right">{{ i.value }}</td>
-                            <td class="txt-right" v-show="has_upgrade('inv_weight')">{{ i.size }}</td>
-                            <td>{{ i.type }}</td>
+                            <td class="txt-right">{{ i.price }}</td>
+                            <td class="txt-right" v-show="has_upgrade('inv_weight')">{{ i.weight }}</td>
+                            <td>{{ i.item_type }}</td>
 
                             <td v-show="midsell(i)" v-bind:id="'invrow-sell-' + i.id"></td>
                             <td v-show="!midsell(i)" v-bind:class="{'noselect':1, 'busy': busy && !has_upgrade('queue_sell')}">
@@ -296,6 +296,17 @@
                     this.init()
                 },
                 methods: {
+                    fetch_api(fname, callback) {
+                        let f = fetch(`http://localhost:9051/${fname}/?format=json`).then(resp => resp.json());
+                        if (callback === undefined) {
+                            f.then(data => {
+                                DB.setItem(fname, data);
+                            });
+                        } else {
+                            f.then(callback);
+                        }
+                        return f; // in case we want it
+                    },
                     fetch_json(fname, callback) {
                         let f = fetch('/data/' + fname + '.json').then(resp => resp.json());
                         if (callback === undefined) {
@@ -325,7 +336,7 @@
                             if (true || value === null || value != HASH) {
                                 console.log('Incorrect cache, load new')
                                 // Load and put into IDB
-                                this.fetch_json('items', (data) => {
+                                this.fetch_api('items', (data) => {
                                     //console.log('d', data)
                                     DB.setItem('items', data);
                                     let hashval = md5(JSON.stringify(data));
@@ -381,6 +392,9 @@
                     CHEATER() {
                         var self = this;
                         return {
+                            speed() {
+                                this.$store.commit('cheat', {'speed': true});
+                            },
                             add_upgrade: function(name)  {
                                 self.$store.state.player.upgrades.push(name);
                             },

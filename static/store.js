@@ -176,7 +176,7 @@ const store = new Vuex.Store({
                     satisfied.push(ctx.getters.player.gold == ach.exec.gold);
                 }
                 if ('invtotal' in ach.exec) {
-                    let val = _.reduce(ctx.getters.inventory, (acc, val) => acc + val.value, 0);
+                    let val = _.reduce(ctx.getters.inventory, (acc, val) => acc + val.price, 0);
                     satisfied.push(val >= ach.exec.invtotal);
                 }
                 // Total time of run (in seconds)
@@ -413,10 +413,10 @@ const store = new Vuex.Store({
             return _.filter(g.inventory, i => i.id == id);
         },
         inv_type: (state, g) => type => {
-            return _.filter(g.inventory, i => i.type == type);
+            return _.filter(g.inventory, i => i.item_type == type);
         },
         inv_group: (state, g) => type => {
-            return _.filter(g.inventory, i => i.dropgroup == type);
+            return _.filter(g.inventory, i => i.drop_group == type);
         },
         inv_qty: (state, g) => id => {
             let f = _.filter(g.inventory, i => i.id == id);
@@ -451,7 +451,7 @@ const store = new Vuex.Store({
         },
         weight: state => {
             // sum the inventory
-            let s = _.reduce(_.pluck(state.inv, 'size'), (acc, val) => acc + val, 0);
+            let s = _.reduce(_.pluck(state.inv, 'weight'), (acc, val) => acc + val, 0);
             return s;
         },
         capacity: (state, getters) => {
@@ -577,7 +577,7 @@ const store = new Vuex.Store({
         boost_active: state => type => _.filter(state.player.boosts, b => b.type == type).length > 0,
         boost_active_value: (state, g) => type => {
             if (!g.boost_active(type)) return 0;
-            return _.filter(state.player.boosts, b => b.type == type)[0].pvalue;
+            return _.filter(state.player.boosts, b => b.type == type)[0].use_value;
         },
 
         // autosellers

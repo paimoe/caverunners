@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "caverunners"
+version = "0.4"
+description = ""
+authors = ["paimoe <me@paimoe.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+Django = "^5.1"
+django-rest-framework = "^0.1.0"
+psycopg2-binary = "^2.9.9"
+django-cors-headers = "^4.4.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
