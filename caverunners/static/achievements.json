@@ -1,0 +1,93 @@
+[
+    {
+        "description": "Find a rubber ducky",
+        "exec": "{\"own\":[[3,1]]}",
+        "id": 1,
+        "name": "quackquack",
+        "nice_name": "Quack Quack"
+    },
+    {
+        "description": "Own 10 pieces of junk",
+        "exec": "{\"own_type\":[[\"junk\",10]]}",
+        "id": 2,
+        "name": "junk10",
+        "nice_name": "Junkyard"
+    },
+    {
+        "description": "Have 1000 gold on hand",
+        "exec": "{\"gold\":1000}",
+        "id": 3,
+        "name": "gold1",
+        "nice_name": "Shiny"
+    },
+    {
+        "description": "Find a Diamond Ring",
+        "exec": "{\"own\":[[27,1]]}",
+        "id": 4,
+        "name": "diamondring",
+        "nice_name": "Like a Diamond"
+    },
+    {
+        "description": "Have 10k gold",
+        "exec": "{\"gold\":10000}",
+        "id": 5,
+        "name": "gold2",
+        "nice_name": "Loaded"
+    },
+    {
+        "description": "Have 5k worth of items and 0 gold",
+        "exec": "{\"gold_exact\":0,\"invtotal\":5000}",
+        "id": 6,
+        "name": "invested",
+        "nice_name": "Invested"
+    },
+    {
+        "description": "Find an S-Class item",
+        "exec": "{\"own_group\":[[\"S\", 1]]}",
+        "id": 7,
+        "name": "sclass",
+        "nice_name": "S-Class"
+    },
+    {
+        "description": "Complete a 100 second run",
+        "exec": "{\"runtime\": 100}",
+        "id": 8,
+        "name": "keepgoing",
+        "nice_name": "Keep Going"
+    },
+    {
+        "description": "Complete a 200 second run",
+        "exec": "{\"runtime\":200}",
+        "id": 9,
+        "name": "200club",
+        "nice_name": "200 Club"
+    },
+    {
+        "description": "Complete a 300 second run",
+        "exec": "{\"runtime\":300}",
+        "id": 10,
+        "name": "longhaul",
+        "nice_name": "The Long Haul"
+    },
+    {
+        "description": "Have 5000 gold worth of items",
+        "exec": "{\"invtotal\":5000}",
+        "id": 11,
+        "name": "assets",
+        "nice_name": "Assets"
+    },
+    {
+        "description": "Have 100 items on hand",
+        "exec": "{\"invcount\":100}",
+        "id": 12,
+        "name": "100items",
+        "nice_name": "Centurion"
+    },
+    {
+        "description": "Have 200 items on hand",
+        "exec": "{\"invcount\":200}",
+        "id": 13,
+        "name": "200items",
+        "nice_name": "Double Century"
+    }
+]

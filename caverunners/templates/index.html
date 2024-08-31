@@ -1,0 +1,434 @@
+{% verbatim %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8"> 
+        <base href="/">
+        <title>&#x272a; Cave Runners</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <link rel="stylesheet" type="text/css" href="/static/main.css"/>
+        <style type="text/css">
+        
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <statusbar ref="status"></statusbar>
+            <notices></notices>
+
+            <div class="pure-g main">
+                <charmenu ref="char"></charmenu>
+                <keep-alive>
+                    <router-view></router-view>
+                </keep-alive>
+                <!--<inventory></inventory>-->
+                <actionmenu v-if="$route.name == 'inventory'"></actionmenu>
+                <div v-if="$route.name != 'inventory'" class="pure-u-1-3 sidebar-blank">&nbsp;</div>
+            </div>
+        </div>
+
+        <template id="statusbar">
+            <div class="pure-g" id="top">
+                <div class="pure-u-1-6" id="logo">
+                    <h1>caverunners</h1>
+                </div>
+                <div class="pure-u-5-6" v-bind:style="css_gradient_percent()">
+                    <div class="startbutton" v-cloak>
+                        <input type="button" v-bind:value="timeleft" v-bind:class="{'redbutton':over_hard_limit, 'runningbutton': is_running}" :disabled="is_running || over_hard_limit || busy" v-on:click="run()" /> 
+                    </div>
+                    <div class="cancelbutton" style="display:none"></div>
+                    <div class="pausebutton" style="display:none"></div>
+                </div>
+            </div>
+        </template>
+        <template id="notices">
+            <div v-if="show()" class="pure-u-1 rundone" id="noticebar">
+                <p>Your run took {{ run.time.toFixed(2) }}s!</p>
+                <p>You gained {{ run.exp.toFixed(0) }} exp and <em class="gold">{{ run.gold.toFixed(0) }}</em><em class="gold" v-if="run.boost.gold > 0">(+{{ run.boost.gold.toFixed(0) }})</em> gold.</p>
+                <div v-if="found_items">
+                    <p>You also found the following items. Click to select the ones to keep.</p>
+                    <ul class="items" v-for="(list, type) in runitems()">
+                        <li v-for="i in list" v-bind:class="['itemselector', 'noselect', 'itype' + i.type, {'ipicked': selected(i)}, 'icls' + i.drop_group]" v-on:click="select(i)">
+                            {{ text(i) }}
+                            <span v-if="selected(i)">&#9745;</span>
+                            <span v-if="!selected(i)">&#9744;</span>
+                        </li>
+                    </ul>
+                </div>
+                <input type="button" :value="endbutton" v-on:click="confirm_end()" />
+                <input type="button" v-if="has_upgrade('runtakeall')" value="Take All" v-on:click="take_all()" />
+            </div>
+        </template>
+        <template id="charmenu">
+            <div class="pure-u-1-6" id="part-char">
+                <div class="nicetable">
+                    <h1 v-if="player.name"><span>{{ player.name }} &#x272a; {{ player.level }}</span></h1>
+                    <h1 v-if="!player.name" v-on:click="set_name()">[Click to set name]</h1>
+                    <div class="pure-g">
+                        <div class="pure-u-1-2">Experience</div>
+                        <div class="pure-u-1-2">{{ exp_display }}</div>
+                    </div>
+                    <!--<div class="pure-g">
+                        <progress class="xp" v-bind:max="required_exp()" v-bind:value="player.exp.toFixed(0)"></progress>
+                    </div>-->
+                    <div class="pure-g">
+                        <div class="pure-u-1-2">Capacity</div>
+                        <div class="pure-u-1-2"><span class="penalty" v-if="penalty">+{{ penalty }}%</span> {{ weight }}/{{ capacity }}</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-1-2">Gold</div>
+                        <div class="pure-u-1-2"><em class="gold">{{ player.gold.toFixed(0) }}</em></div>
+                    </div>
+                </div>
+                <div class="nicetable">
+                    <h1><span>Stats</span></h1>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Faster Run Speed</div>
+                        <div class="pure-u-1-4">+{{ stats.increased_speed }}%</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Sell Speed</div>
+                        <div class="pure-u-1-4">+{{ stats.sell_speed }}%</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Gold Find</div>
+                        <div class="pure-u-1-4">+{{ stats.gold_find }}%</div>
+                    </div>
+                    <div style="display:none" class="pure-g">
+                        <div class="pure-u-3-4">Item Find Chance</div>
+                        <div class="pure-u-1-4">{{ stats.magic_find }}%</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Max Penalty</div>
+                        <div class="pure-u-1-4">{{ stats.max_penalty }}%</div>
+                    </div>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4">Achievements</div>
+                        <div class="pure-u-1-4">{{ stats.achievement_count }}</div>
+                    </div>
+                </div>
+
+                <div class="nicetable">
+                    <h1 title="One-time use for the next time"><span>Boosts</span></h1>
+                    <div class="pure-g" v-for="b in boosts">
+                        <div class="pure-u-3-4">{{ b.name }}</div>
+                        <div class="pure-u-1-4">+{{ b.pvalue }}%</div>
+                    </div>
+                    <div class="pure-g" v-if="boosts.length == 0">
+                        <div class="pure-u" style="font-size:90%;color:#ccc">No Boosts active</div>
+                    </div>
+                </div>
+
+                <div class="gamestuff">
+                    <p><b>Options</b></p>
+                    <div class="pure-g">
+                        <div class="pure-u-3-4"><label for="confirm_sell">Confirm Sell</label></div>
+                        <div class="pure-u-1-4 check"><input type="checkbox" id="confirm_sell" :checked="checked_option('confirm_sell')" v-on:click="check_option('confirm_sell')" /></div>
+                    </div>
+                </div>
+
+                <div class="gamestuff">
+                    <p>{{ obstats.update }}</p>
+                    <p>{{ obstats.items }} items, {{ obstats.upgrades }} upgrades, {{ obstats.achs }} achievements</p>
+                    <p>Version: {{ obstats.version }} <a href="#" v-on:click="show_debug = 1" style="color:#fff">[debug]</a></p>
+                </div>
+
+                <div class="credits">
+                    <p>&copy; 2018 &middot; <a href="https://github.com/paimoe/overburdened" target="_blank">github</a></p>
+                </div>
+            </div>
+        </template>
+        <template id="actionmenu">
+            <div class="pure-u-1-3" id="part-actions">
+                <div class="messages" style="display:none">
+                    <div v-for="m in messages" v-bind:class="messageclass(m)">
+                        <!-- icon later -->
+                        {{ m.m }}
+                    </div>
+                </div>
+                <div class="upgrades nicetable">
+                    <h1><span>Upgrades</span></h1>
+                    <div v-for="(u, name) in upgrades" v-bind:class="{'owned': owned(u.name), 'pure-g': 1}">
+                        <div class="pure-u-3-4">
+                            <p class="upgrade-name">{{ u.nice_name }} <span class="upgrade-req">{{ has_requirement(u) }}</span></p>
+                            <p v-if="!owned(u.name)" class="upgrade-desc">{{ u.description }}</p>
+                        </div>
+                        <div class="pure-u-1-4">
+                            <input type="button" v-if="!owned(u.name) && done_requirements(u)" v-bind:class="{'buybutton':1, 'upgradebtn':1, 'off': owned(u.name)||toomuch(u)}" v-bind:value="buytext(u)" v-on:click="purchase(u)" :disabled="owned(u.name) || toomuch(u)" />
+                            <input type="button" v-if="owned(u.name)" class="buybutton upgradebtn off" value="Owned &#x1F5F8;" disabled="disabled" />
+                        </div>
+                    </div>
+                </div>
+                <div class="upgrades nicetable">
+                    <h1><span>Purchased Upgrades ({{ upgrades_owned.length }})</span></h1>
+                    <div v-for="(u, name) in upgrades_owned" v-bind:class="{'owned': owned(u.name), 'pure-g': 1}">
+                        <div class="pure-u">
+                            <p class="upgrade-name">{{ u.nice_name }} <small style="color:#888">{{ u.description }}</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <template id="inventory">
+            <div class="pure-u-1-2" id="part-inv">
+                <div class="achievementdisplay pure-g" v-for="ach in new_achievements">
+                    <div class="pure-u-1-8 achimg"><img src="https://via.placeholder.com/96x96" /></div>
+                    <div class="pure-u-3-4">
+                        <h2>Achievement Unlocked!</h2>
+                        <h3>&rarr; {{ ach.nice_name }}</h3>
+                        <p>{{ ach.description }}</p>
+                    </div>
+                    <div class="pure-u-1-8 achclose"><span v-on:click="close_achievement(ach.name)">&#x2A2F;</span></div>
+                </div>
+                <div class="invtablebg">
+                    <div class="nicetable">
+                        <h1><span>Inventory</span></h1>
+                        <!-- Inv total -->
+                        <div class="pure-g">
+                            <div class="pure-u-1-3"><div title="Total value of sellable items">Total Value: <em class="gold">{{ totalvalue() }}</em></div></div>
+                            <div class="pure-u-1-3"><div v-if="has_upgrade('inv_filter')" style="text-align:center">Filter</div></div>
+                            <div class="pure-u-1-3">Total Items: {{ totalitems() }}</div>
+                        </div>
+                    </div>
+                    <div class="nicetable">
+                        <h1><span>Tools</span></h1>
+                        <div class="pure-g inv-tools noselect">
+                            <div class="pure-u-1-3"><a v-if="has_upgrade('selljunk1')" v-on:click="sell_max_junk()">Sell {{ num_junk_autosell }} of each junk</a></div>
+                            <div class="pure-u-1-3"></div>
+                            <div class="pure-u-1-3"></div>
+                        </div>
+                    </div>
+                    <div v-if="has_upgrade('autosellerslot1')" class="nicetable">
+                        <h1><span>Autosell</span></h1>
+                        <div class="pure-g" v-for="a in autosell_slots">
+                            <div class="pure-u-1-4">{{ a.name }} <a href="#" class="white" v-on:click="autosell_rm(a)">[x]</a></div>
+                            <div class="pure-u-3-4 text-left" v-bind:id="'autosell-' + a.id">Autoselling</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- if no upgrade for grouped, dont show qty column -->
+                <table class="inv pure-table">
+                    <thead>
+                        <tr>
+                            <td style="width:30%" v-on:click="sort('name')" class="sortheader">
+                                Name
+                                <span v-html="sort_icon_name"></span>
+                            </td>
+                            <td style="width:15%" v-on:click="sort('value')" class="sortheader">
+                                Value
+                                <span v-html="sort_icon_value"></span>
+                            </td>
+                            <td style="width:15%" v-on:click="sort('weight')" class="sortheader" v-if="has_upgrade('inv_weight')">
+                                Weight
+                                <span v-html="sort_icon_weight"></span>
+                            </td>
+                            <td>Type</td>
+                            <td style="width:30%">Sell</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="i in items_list">
+                            <!--<td v-bind:class="{'busy': midsell()}"><router-link :to="{name: 'itempage', params: {id: i.id}}">{{ i.name }}</router-link>-->
+                            <td>{{ i.name }}
+                                <span v-if="uncommon(i)" v-bind:class="['dot', 'dot-' + i.drop_group]">&#x25CF;</span>
+                                <span v-show="has_upgrade('inv_group') && i.qty > 1" style="color:#ddd" class="pull-right">x{{ i.qty }}</span>
+                            </td>
+                            <td class="txt-right">{{ i.price }}</td>
+                            <td class="txt-right" v-show="has_upgrade('inv_weight')">{{ i.weight }}</td>
+                            <td>{{ i.item_type }}</td>
+
+                            <td v-show="midsell(i)" v-bind:id="'invrow-sell-' + i.id"></td>
+                            <td v-show="!midsell(i)" v-bind:class="{'noselect':1, 'busy': busy && !has_upgrade('queue_sell')}">
+                                <a v-on:click="sell(i)" v-show="sellable(i)">Sell</a>
+                                <a v-if="max_multi_sell > 1 && !uncommon(i) && sellable(i)" v-on:click="sellmax(i)">Sell {{ max_multi_sell }}</a>
+                                <a v-if="usable(i)" v-on:click="use(i)">Use</a>
+                                <a v-if="!uncommon(i) && autosell_slots_open" v-on:click="autosell_add(i)">Autosell</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+
+        <template id="itempage">
+                <div class="pure-u-1-2" id="part-itempage">
+                    <div class="back">
+                        <router-link to="/" style="text-decoration:none">
+                            <div class="startbutton">
+                                <input type="button" value="Back to Inventory" />
+                            </div>
+                        </router-link>
+                    </div>
+                    <h1>{{ item.name }}</h1>
+                    <h2>{{ item.description }}</h2>
+                </div>
+        </template>
+
+        <script src="/static/vue.min.js"></script>
+        <script src="/static/vuex.min.js"></script>
+        <script src="/static/vue-router.min.js"></script>
+        <script src="/static/localforage.min.js"></script>
+        <script src="/static/md5.min.js"></script>
+        <script src="/static/underscore-min.js"></script>
+        <script src="/static/random.min.js"></script>
+
+        <script src="/static/constants.js"></script>
+        <script src="/static/store.js"></script>
+        <script src="/static/components.js"></script>
+        <script>
+
+            const routes = [
+                { path: '/', component: Inventory, name: 'inventory' },
+                //{ path: '/itempage/:id', component: Itempage, name: 'itempage' }
+            ];
+
+            const router = new VueRouter({
+               // mode: 'history',
+                routes
+            });
+            // can we just make this.player a reference to this.$store.getters.player or whatevs
+            var app = new Vue({
+                el: '#container',
+                store,
+                router,
+                data: {
+                    
+                },
+                created() {
+                    this.init()
+                },
+                methods: {
+                    fetch_api(fname, callback) {
+                        let f = fetch(`/api/${fname}/?format=json`).then(resp => resp.json());
+                        if (callback === undefined) {
+                            f.then(data => {
+                                DB.setItem(fname, data);
+                            });
+                        } else {
+                            f.then(callback);
+                        }
+                        return f; // in case we want it
+                    },
+                    fetch_json(fname, callback) {
+                        let f = fetch('/static/' + fname + '.json').then(resp => resp.json());
+                        if (callback === undefined) {
+                            f.then(data => {
+                                DB.setItem(fname, data);
+                            });
+                        } else {
+                            f.then(callback);
+                        }
+                        return f; // in case we want it
+                    },
+                    fetch_from_idb(itemname) {
+                        DB.getItem(itemname).then((resp) => {
+                            //console.log('Items from IDB', itemname, resp);
+                            this.$store.commit(itemname, resp);
+                        });
+                    },
+                    init() {
+                        //console.log('init');
+                        var self = this;
+
+                        // Load data, store in idb
+                        // Check cache from indexeddb
+                        DB.getItem('cachestats.hash').then((value) => {
+                            //console.log('hash value', value);
+                            // DEV: always get fresh
+                            if (true || value === null || value != HASH) {
+                                console.log('Incorrect cache, load new')
+                                // Load and put into IDB
+                                this.fetch_api('items', (data) => {
+                                    //console.log('d', data)
+                                    DB.setItem('items', data);
+                                    let hashval = md5(JSON.stringify(data));
+                                    DB.setItem('cachestats.hash', hashval);
+                                    console.log('Updated cachestats.hash to', hashval);
+                                });
+
+                                // Load user data
+                                this.fetch_json('levels');
+                                this.fetch_json('upgrades', data => {
+                                    // Convert it
+                                    data = _.indexBy(data, 'name');
+                                    DB.setItem('upgrades', data);
+                                });
+                                this.fetch_json('achievements');
+                            } // maybe race condition?
+
+                            // Load from idb
+                            this.fetch_from_idb('items');
+                            this.fetch_from_idb('levels');
+                            this.fetch_from_idb('upgrades');
+                            this.fetch_from_idb('achievements');
+
+                            DB.getItem('save').then(resp => {
+                                //console.log('SAVE', resp);
+                                window.SAVE = resp;
+                                if (resp !== null) {
+                                    //resp['player']['boosts'] = [];
+                                    //delete resp.player.boosters
+                                    //console.log(resp);
+                                    self.$store.dispatch('loadsave', resp);
+
+                                    self.setup_timers(resp);
+                                }
+                            });
+
+                            // For all items, pre-set state.stats.owned and state.stats.sold
+                        });
+                    },
+                    setup_timers(sdata) {
+                        //console.log('setup_timers()',sdata.run, sdata.autosell_slots);
+                        for (let t of sdata.run) {
+                            // now we call Statusbar.run(t) 
+                            this.$refs.status.run(t);
+                        }
+
+                        // Setup autosellers
+                    },
+                    message(msg) {
+                        //console.log('called message() with msg=', msg);
+                        this.$store.commit('message', {'type': 'simple', m: msg});
+                    },
+                    CHEATER() {
+                        var self = this;
+                        return {
+                            speed() {
+                                this.$store.commit('cheat', {'speed': true});
+                            },
+                            add_upgrade: function(name)  {
+                                self.$store.state.player.upgrades.push(name);
+                            },
+                            add_gold(amount) {
+                                self.$store.state.player.gold += amount;
+                            },
+                            level(level) {
+                                self.$store.state.player.level = level;
+                                var nlevel = self.$store.getters.next_level;
+                            },
+                            add_exp(exp) {
+                                self.$store.commit('add_exp', exp);
+                            },
+                            clear() {
+                                self.$store.state.player = {'name': 'dux', level: 1, exp: 0, gold:0, upgrades:[], capacity:BASES.INV_SIZE};
+                                self.$store.state.inv = [];
+                            },
+                            add_item(itemid) {
+                                let item = _.filter(self.$store.state.items, i => i.id == itemid);
+                                self.$store.commit('add_to_inventory', item);
+                                console.log('Added', item[0].name);
+                            },
+                            rm_upgrade(upg) {
+                                self.$store.state.player.upgrades = _.without(self.$store.state.player.upgrades, upg);
+                            }
+                        }
+
+                    }
+                }
+            });
+
+        </script>
+    </body>
+</html>
+{% endverbatim %}

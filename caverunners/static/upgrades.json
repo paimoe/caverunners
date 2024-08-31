@@ -1,0 +1,582 @@
+[
+    {
+        "cost": 500,
+        "description": "Group items in your inventory",
+        "hvalue": null,
+        "id": 1,
+        "name": "inv_group",
+        "nice_name": "Inventory Grouping",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 1000,
+        "description": "Sort inventory by item name",
+        "hvalue": null,
+        "id": 2,
+        "name": "inv_sort_name",
+        "nice_name": "Inventory Sort (name)",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 500,
+        "description": "Show total value on inventory",
+        "hvalue": null,
+        "id": 3,
+        "name": "inv_totalvalue",
+        "nice_name": "Total Inventory Value",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 200,
+        "description": "Adds 10 to your capacity",
+        "hvalue": 10,
+        "id": 4,
+        "name": "capacity1",
+        "nice_name": "Capacity +10",
+        "requires": "",
+        "type": "capacity"
+    },
+    {
+        "cost": 1000,
+        "description": "+1% faster runs",
+        "hvalue": 1,
+        "id": 5,
+        "name": "faster1",
+        "nice_name": "Faster Running 1",
+        "requires": "",
+        "type": "speed"
+    },
+    {
+        "cost": 2500,
+        "description": "+2% faster runs",
+        "hvalue": 2,
+        "id": 6,
+        "name": "faster2",
+        "nice_name": "Faster Running 2",
+        "requires": "faster1",
+        "type": "speed"
+    },
+    {
+        "cost": 2001,
+        "description": "Search your inventory",
+        "hvalue": null,
+        "id": 7,
+        "name": "inv_filter",
+        "nice_name": "Inventory Filter",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 100,
+        "description": "Show total number of items",
+        "hvalue": null,
+        "id": 8,
+        "name": "inv_totalcount",
+        "nice_name": "Inventory Totals",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 500,
+        "description": "Increase maximum penalty by 10%",
+        "hvalue": 10,
+        "id": 9,
+        "name": "maxpenalty1",
+        "nice_name": "Max Penalty +10",
+        "requires": "",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 1000,
+        "description": "Increase maximum penalty by 10%",
+        "hvalue": 10,
+        "id": 10,
+        "name": "maxpenalty2",
+        "nice_name": "Max Penalty +10",
+        "requires": "maxpenalty1",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 2000,
+        "description": "Increase maximum penalty by 10%",
+        "hvalue": 20,
+        "id": 11,
+        "name": "maxpenalty3",
+        "nice_name": "Max Penalty +20",
+        "requires": "maxpenalty2",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 3000,
+        "description": "Increase maximum penalty by 30%",
+        "hvalue": 30,
+        "id": 12,
+        "name": "maxpenalty4",
+        "nice_name": "Max Penalty +30",
+        "requires": "maxpenalty3",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 5001,
+        "description": "Access the Stash",
+        "hvalue": "",
+        "id": 13,
+        "name": "stash",
+        "nice_name": "Stash",
+        "requires": "",
+        "type": "stash"
+    },
+    {
+        "cost": 2000,
+        "description": "Increase Gold Found +5%",
+        "hvalue": 5,
+        "id": 14,
+        "name": "goldfind1",
+        "nice_name": "Gold Find 1",
+        "requires": "",
+        "type": "goldfind"
+    },
+    {
+        "cost": 4000,
+        "description": "Increase Gold Found +5%",
+        "hvalue": 5,
+        "id": 15,
+        "name": "goldfind2",
+        "nice_name": "Gold Find 2",
+        "requires": "goldfind1",
+        "type": "goldfind"
+    },
+    {
+        "cost": 200,
+        "description": "Show weight of items in inventory",
+        "hvalue": "",
+        "id": 16,
+        "name": "inv_weight",
+        "nice_name": "Inventory Weights",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 500,
+        "description": "Sell all the junk you have on hand",
+        "hvalue": 1,
+        "id": 17,
+        "name": "selljunk1",
+        "nice_name": "Sell All Junk 1",
+        "requires": "inv_multisell1",
+        "type": "invpageselljunk"
+    },
+    {
+        "cost": 10001,
+        "description": "Access to the Blacksmith",
+        "hvalue": "",
+        "id": 18,
+        "name": "bsmith",
+        "nice_name": "Blacksmith",
+        "requires": "",
+        "type": "bsmith"
+    },
+    {
+        "cost": 5001,
+        "description": "A small, basic stash",
+        "hvalue": 50,
+        "id": 19,
+        "name": "stash1",
+        "nice_name": "Stash 1",
+        "requires": "",
+        "type": "stash"
+    },
+    {
+        "cost": 1000,
+        "description": "Guaranteed to find another item during a run",
+        "hvalue": 1,
+        "id": 20,
+        "name": "itemfind1",
+        "nice_name": "Item Find 1",
+        "requires": "",
+        "type": "itemfind"
+    },
+    {
+        "cost": 2000,
+        "description": "Guaranteed to find +2 items during a run",
+        "hvalue": 2,
+        "id": 21,
+        "name": "itemfind2",
+        "nice_name": "Item Find 2",
+        "requires": "itemfind1",
+        "type": "itemfind"
+    },
+    {
+        "cost": 1000,
+        "description": "Sell up to 2 of the same item, at the same time",
+        "hvalue": 1,
+        "id": 22,
+        "name": "inv_multisell1",
+        "nice_name": "Sell Multiple 1",
+        "requires": "",
+        "type": "invpagemultisell"
+    },
+    {
+        "cost": 2000,
+        "description": "Sell another 2 of the same item, at the same time",
+        "hvalue": 2,
+        "id": 23,
+        "name": "inv_multisell2",
+        "nice_name": "Sell Multiple 2",
+        "requires": "inv_multisell1",
+        "type": "invpagemultisell"
+    },
+    {
+        "cost": 200,
+        "description": "Button to take all when completing a run",
+        "hvalue": "",
+        "id": 24,
+        "name": "runtakeall",
+        "nice_name": "Take All Button",
+        "requires": "",
+        "type": "runend"
+    },
+    {
+        "cost": 500,
+        "description": "Adds 10 to your capacity",
+        "hvalue": 10,
+        "id": 25,
+        "name": "capacity2",
+        "nice_name": "Capacity +10",
+        "requires": "capacity1",
+        "type": "capacity"
+    },
+    {
+        "cost": 1500,
+        "description": "Adds 20 to your capacity",
+        "hvalue": 20,
+        "id": 26,
+        "name": "capacity3",
+        "nice_name": "Capacity +20",
+        "requires": "capacity2",
+        "type": "capacity"
+    },
+    {
+        "cost": 4000,
+        "description": "Adds 30 to your capacity",
+        "hvalue": 30,
+        "id": 27,
+        "name": "capacity4",
+        "nice_name": "Capacity +30",
+        "requires": "capacity3",
+        "type": "capacity"
+    },
+    {
+        "cost": 12001,
+        "description": "10% more recycling chance",
+        "hvalue": 10,
+        "id": 28,
+        "name": "recycle1",
+        "nice_name": "Recycle 1",
+        "requires": "",
+        "type": "recycle"
+    },
+    {
+        "cost": 4000,
+        "description": "Sell +2 items",
+        "hvalue": 2,
+        "id": 29,
+        "name": "inv_multisell3",
+        "nice_name": "Sell Multiple 3",
+        "requires": "inv_multisell2",
+        "type": "invpagemultisell"
+    },
+    {
+        "cost": 10000,
+        "description": "Sell +4 items",
+        "hvalue": 4,
+        "id": 30,
+        "name": "inv_multisell4",
+        "nice_name": "Sell Multiple 4",
+        "requires": "inv_multisell3",
+        "type": "invpagemultisell"
+    },
+    {
+        "cost": 25001,
+        "description": "Sell all quantities of an item",
+        "hvalue": "",
+        "id": 31,
+        "name": "inv_sellall",
+        "nice_name": "Sell All",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 5000,
+        "description": "Increase maximum penalty by 30%",
+        "hvalue": 30,
+        "id": 32,
+        "name": "maxpenalty5",
+        "nice_name": "Max Penalty +30",
+        "requires": "maxpenalty4",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 10000,
+        "description": "Increase maximum penalty by 40%",
+        "hvalue": 40,
+        "id": 33,
+        "name": "maxpenalty6",
+        "nice_name": "Max Penalty +40",
+        "requires": "maxpenalty5",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 18000,
+        "description": "Increase maximum penalty by 50%",
+        "hvalue": 50,
+        "id": 34,
+        "name": "maxpenalty7",
+        "nice_name": "Max Penalty +50",
+        "requires": "maxpenalty6",
+        "type": "maxpenalty"
+    },
+    {
+        "cost": 4000,
+        "description": "+3 items found",
+        "hvalue": 3,
+        "id": 35,
+        "name": "itemfind3",
+        "nice_name": "Item Find 3",
+        "requires": "itemfind2",
+        "type": "itemfind"
+    },
+    {
+        "cost": 10000,
+        "description": "+4 items found",
+        "hvalue": 4,
+        "id": 36,
+        "name": "itemfind4",
+        "nice_name": "Item Find 4",
+        "requires": "itemfind3",
+        "type": "itemfind"
+    },
+    {
+        "cost": 20000,
+        "description": "+5 items found",
+        "hvalue": 5,
+        "id": 37,
+        "name": "itemfind5",
+        "nice_name": "Item Find 5",
+        "requires": "itemfind4",
+        "type": "itemfind"
+    },
+    {
+        "cost": 5000,
+        "description": "+3% faster runs",
+        "hvalue": 3,
+        "id": 38,
+        "name": "faster3",
+        "nice_name": "Faster Running 3",
+        "requires": "faster2",
+        "type": "speed"
+    },
+    {
+        "cost": 7500,
+        "description": "+4% faster runs",
+        "hvalue": 4,
+        "id": 39,
+        "name": "faster4",
+        "nice_name": "Faster Running 4",
+        "requires": "faster3",
+        "type": "speed"
+    },
+    {
+        "cost": 10000,
+        "description": "+5% faster runs",
+        "hvalue": 5,
+        "id": 40,
+        "name": "faster5",
+        "nice_name": "Faster Running 5",
+        "requires": "faster4",
+        "type": "speed"
+    },
+    {
+        "cost": 20000,
+        "description": "Sell +5 items",
+        "hvalue": 5,
+        "id": 41,
+        "name": "inv_multisell5",
+        "nice_name": "Sell Multiple 5",
+        "requires": "inv_multisell4",
+        "type": "invpagemultisell"
+    },
+    {
+        "cost": 1000,
+        "description": "+1% faster selling",
+        "hvalue": 1,
+        "id": 42,
+        "name": "sellspeed1",
+        "nice_name": "Sell Speed 1",
+        "requires": "",
+        "type": "sellspeed"
+    },
+    {
+        "cost": 2500,
+        "description": "+2% faster selling",
+        "hvalue": 2,
+        "id": 43,
+        "name": "sellspeed2",
+        "nice_name": "Sell Speed 2",
+        "requires": "sellspeed1",
+        "type": "sellspeed"
+    },
+    {
+        "cost": 5000,
+        "description": "+3% faster selling",
+        "hvalue": 3,
+        "id": 44,
+        "name": "sellspeed3",
+        "nice_name": "Sell Speed 3",
+        "requires": "sellspeed2",
+        "type": "sellspeed"
+    },
+    {
+        "cost": 7500,
+        "description": "+4% faster selling",
+        "hvalue": 4,
+        "id": 45,
+        "name": "sellspeed4",
+        "nice_name": "Sell Speed 4",
+        "requires": "sellspeed3",
+        "type": "sellspeed"
+    },
+    {
+        "cost": 10000,
+        "description": "+5% faster selling",
+        "hvalue": 5,
+        "id": 46,
+        "name": "sellspeed5",
+        "nice_name": "Sell Speed 5",
+        "requires": "sellspeed4",
+        "type": "sellspeed"
+    },
+    {
+        "cost": 5000,
+        "description": "Allows the use of boosts",
+        "hvalue": null,
+        "id": 47,
+        "name": "use_boosts",
+        "nice_name": "Use Boosts",
+        "requires": "",
+        "type": "boosts"
+    },
+    {
+        "cost": 2001,
+        "description": "Allow showing the total weight/value for items",
+        "hvalue": "",
+        "id": 48,
+        "name": "inv_toggle_totals",
+        "nice_name": "Toggle Totals",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 1000,
+        "description": "Sort inventory by item value",
+        "hvalue": "",
+        "id": 49,
+        "name": "inv_sort_value",
+        "nice_name": "Inventory Sort (value)",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 1000,
+        "description": "Sort inventory by item weight",
+        "hvalue": null,
+        "id": 50,
+        "name": "inv_sort_weight",
+        "nice_name": "Inventory Sort (weight)",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 1000,
+        "description": "Set your items to sell when you return",
+        "hvalue": "",
+        "id": 51,
+        "name": "queue_sell",
+        "nice_name": "Queue Sell",
+        "requires": "",
+        "type": "invpage"
+    },
+    {
+        "cost": 1000,
+        "description": "Sell all the junk you have on hand (+2)",
+        "hvalue": 2,
+        "id": 52,
+        "name": "selljunk2",
+        "nice_name": "Sell All Junk 2",
+        "requires": "selljunk1,inv_multisell2",
+        "type": "invpageselljunk"
+    },
+    {
+        "cost": 1500,
+        "description": "Sell all the junk you have on hand (+2)",
+        "hvalue": 2,
+        "id": 53,
+        "name": "selljunk3",
+        "nice_name": "Sell All Junk 3",
+        "requires": "selljunk2,inv_multisell3",
+        "type": "invpageselljunk"
+    },
+    {
+        "cost": 2000,
+        "description": "Sell all the junk you have on hand (+4)",
+        "hvalue": 4,
+        "id": 54,
+        "name": "selljunk4",
+        "nice_name": "Sell All Junk 4",
+        "requires": "selljunk3,inv_multisell3",
+        "type": "invpageselljunk"
+    },
+    {
+        "cost": 2000,
+        "description": "Sell one item automatically. This also continues while you run.",
+        "hvalue": 1,
+        "id": 55,
+        "name": "autosellerslot1",
+        "nice_name": "Autoseller 1",
+        "requires": "",
+        "type": "autosellslot"
+    },
+    {
+        "cost": 5000,
+        "description": "Another auto sell slot",
+        "hvalue": 1,
+        "id": 56,
+        "name": "autosellerslot2",
+        "nice_name": "Autoseller 2",
+        "requires": "autosellerslot1",
+        "type": "autosellslot"
+    },
+    {
+        "cost": 10000,
+        "description": "Another auto sell slot",
+        "hvalue": 1,
+        "id": 57,
+        "name": "autosellerslot3",
+        "nice_name": "Autoseller 3",
+        "requires": "autosellerslot2",
+        "type": "autosellslot"
+    },
+    {
+        "cost": 15000,
+        "description": "Another auto sell slot",
+        "hvalue": 1,
+        "id": 58,
+        "name": "autosellerslot4",
+        "nice_name": "Autoseller 4",
+        "requires": "autosellerslot3",
+        "type": "autosellslot"
+    }
+]

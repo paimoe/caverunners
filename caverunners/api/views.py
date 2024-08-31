@@ -40,6 +40,10 @@ class ItemViewSet(viewsets.ModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
 
 
+def index(request):
+    return render(request, "index.html")
+
+
 def importer(request):
     # Load JSON and import
     with open("data/items.json", "r") as f:

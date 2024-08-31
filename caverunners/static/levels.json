@@ -1,0 +1,92 @@
+[
+    {
+        "basetime": 5,
+        "capacity": 10,
+        "exp": 0,
+        "id": 1
+    },
+    {
+        "basetime": 10,
+        "capacity": 20,
+        "exp": 100,
+        "id": 2
+    },
+    {
+        "basetime": 15,
+        "capacity": 30,
+        "exp": 200,
+        "id": 3
+    },
+    {
+        "basetime": 20,
+        "capacity": 40,
+        "exp": 350,
+        "id": 4
+    },
+    {
+        "basetime": 30,
+        "capacity": 50,
+        "exp": 500,
+        "id": 5
+    },
+    {
+        "basetime": 40,
+        "capacity": 60,
+        "exp": 900,
+        "id": 6
+    },
+    {
+        "basetime": 50,
+        "capacity": 70,
+        "exp": 1200,
+        "id": 7
+    },
+    {
+        "basetime": 60,
+        "capacity": 80,
+        "exp": 1550,
+        "id": 8
+    },
+    {
+        "basetime": 69,
+        "capacity": 90,
+        "exp": 2000,
+        "id": 9
+    },
+    {
+        "basetime": 75,
+        "capacity": 100,
+        "exp": 3000,
+        "id": 10
+    },
+    {
+        "basetime": 85,
+        "capacity": 120,
+        "exp": 4200,
+        "id": 11
+    },
+    {
+        "basetime": 95,
+        "capacity": 140,
+        "exp": 5500,
+        "id": 12
+    },
+    {
+        "basetime": 110,
+        "capacity": 160,
+        "exp": 6500,
+        "id": 13
+    },
+    {
+        "basetime": 120,
+        "capacity": 180,
+        "exp": 8000,
+        "id": 14
+    },
+    {
+        "basetime": 130,
+        "capacity": 200,
+        "exp": 10000,
+        "id": 15
+    }
+]
